@@ -93,7 +93,7 @@ db.ref("test/settings/memberPassword").on("value", snap=>{
 function login(){
   const pw=document.getElementById("pw").value;
 
-  if(pw===currentPassword){
+  if(pw === String(currentPassword)){
     localStorage.setItem("memberLoginTime", Date.now());
     start();
   }else{
