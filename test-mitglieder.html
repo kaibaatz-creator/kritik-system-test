@@ -255,13 +255,13 @@ function send(){
   };
 
   // LIVE
-  db.ref("test/feedback").push(newMsg);
+  const ref = db.ref("test/feedback").push(newMsg);
 
-  // ARCHIV (IMMER!)
-  db.ref("test/archive").push({
-    ...newMsg,
-    status: "aktiv"
-  });
+// 👉 MIT ID speichern
+db.ref("test/archive/"+ref.key).set({
+  ...newMsg,
+  status: "aktiv"
+});
 
   document.getElementById("text").value="";
 }
