@@ -9,18 +9,9 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <style>
-body{
-  background:#000;
-  color:white;
-  font-family:Arial;
-  text-align:center;
-}
+body{background:#000;color:white;font-family:Arial;text-align:center;}
 
-.logo{
-  height:150px;
-  margin:20px auto;
-  display:block;
-}
+.logo{height:150px;margin:20px auto;display:block;}
 
 table{
   width:95%;
@@ -28,18 +19,31 @@ table{
   border-collapse:collapse;
 }
 
-th, td{
+th,td{
   border:1px solid #333;
   padding:10px;
 }
 
-th{
-  background:#111;
+th{background:#111;}
+
+input{
+  padding:10px;
+  margin:10px;
+  border-radius:8px;
+  border:none;
+  width:200px;
 }
 
-tr:nth-child(even){
-  background:#1a1a1a;
+button{
+  padding:10px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:bold;
+  margin:10px;
 }
+
+.red{background:red;color:white;}
 
 .Kritik{color:#ff4444;}
 .Lob{color:#00ff99;}
@@ -50,22 +54,13 @@ tr:nth-child(even){
 
 <body>
 
-<img src="logo.png" class="logo">
-
-<h2>📊 Archiv (ALLE Nachrichten)</h2>
-
-<table>
-<thead>
-<tr>
-  <th>Typ</th>
-  <th>Nachricht</th>
-  <th>Zeit</th>
-  <th>Status</th>
-</tr>
-</thead>
-
-<tbody id="table"></tbody>
-</table>
+<div id="login">
+  <img src="logo.png" class="logo">
+  <h2>📊 Archiv Login</h2>
+  <input id="pw" placeholder="Code">
+  <button onclick="login()">Login</button>
+  <div id="error" style="color:red;"></div>
+</div>
 
 <script>
 const firebaseConfig = {
@@ -78,23 +73,121 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// 🔥 DATEN LADEN
-db.ref("test/archive").on("child_added", snap=>{
-  const m = snap.val();
+let archivePw="";
+let all=[];
 
-  const tr = document.createElement("tr");
+// 🔑 Passwort laden
+db.ref("test/settings/archivePassword").on("value", snap=>{
+  archivePw = snap.val() || "";
+});
 
-  tr.innerHTML = `
-    <td class="${m.type}">${m.type}</td>
-    <td>${m.text}</td>
-    <td>${new Date(m.time).toLocaleString()}</td>
-    <td style="color:${m.status==="gelöscht"?"red":"#00ff99"}">
-      ${m.status || "aktiv"}
-    </td>
+// LOGIN
+function login(){
+  const pw=document.getElementById("pw").value;
+
+  if(pw === String(archivePw)){
+    start();
+  }else{
+    document.getElementById("error").innerText="Falscher Code";
+  }
+}
+
+// START
+function start(){
+
+  document.body.innerHTML = `
+  <img src="logo.png" class="logo">
+
+  <h2>📊 Archiv</h2>
+
+  <input id="search" placeholder="Suche..." oninput="render()">
+
+  <br>
+
+  <button class="red" onclick="clearArchive()">Archiv löschen</button>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Typ</th>
+        <th>Nachricht</th>
+        <th>Zeit</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="table"></tbody>
+  </table>
   `;
 
-  document.getElementById("table").appendChild(tr);
-});
+  loadArchive();
+}
+
+// 🔥 DATEN LADEN
+function loadArchive(){
+
+  db.ref("test/archive").on("child_added", snap=>{
+    const msg={id:snap.key,...snap.val()};
+    all.push(msg);
+    render();
+  });
+
+  db.ref("test/archive").on("child_changed", snap=>{
+    const updated = snap.val();
+    const index = all.findIndex(m=>m.id===snap.key);
+
+    if(index !== -1){
+      all[index] = {id:snap.key,...updated};
+      render();
+    }
+  });
+
+}
+
+// 🔍 RENDER + SUCHE + SORTIERUNG
+function render(){
+
+  const table=document.getElementById("table");
+  table.innerHTML="";
+
+  const search = document.getElementById("search").value.toLowerCase();
+
+  let list = all.filter(m =>
+    m.text.toLowerCase().includes(search)
+  );
+
+  // 🔥 NEUESTE OBEN
+  list.sort((a,b)=>b.time - a.time);
+
+  list.forEach(m=>{
+    const tr=document.createElement("tr");
+
+    tr.innerHTML=`
+      <td class="${m.type}">${m.type}</td>
+      <td>${m.text}</td>
+      <td>${new Date(m.time).toLocaleString()}</td>
+      <td style="color:${m.status==="gelöscht"?"red":"#00ff99"}">
+        ${m.status}
+      </td>
+    `;
+
+    table.appendChild(tr);
+  });
+}
+
+// 🧹 ARCHIV LÖSCHEN
+function clearArchive(){
+
+  const pw = prompt("Passwort zum Löschen:");
+
+  if(pw !== "2"){
+    alert("Falsches Passwort");
+    return;
+  }
+
+  db.ref("test/archive").remove();
+  alert("Archiv gelöscht");
+  location.reload();
+}
 </script>
 
 </body>
