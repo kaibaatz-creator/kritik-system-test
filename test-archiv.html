@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archiv</title>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<style>
+body{
+  background:#000;
+  color:white;
+  font-family:Arial;
+  text-align:center;
+}
+
+.logo{
+  height:150px;
+  margin:20px auto;
+  display:block;
+}
+
+table{
+  width:95%;
+  margin:auto;
+  border-collapse:collapse;
+}
+
+th, td{
+  border:1px solid #333;
+  padding:10px;
+}
+
+th{
+  background:#111;
+}
+
+tr:nth-child(even){
+  background:#1a1a1a;
+}
+
+.Kritik{color:#ff4444;}
+.Lob{color:#00ff99;}
+.Frage{color:#00bfff;}
+.Vorschlag{color:#ffaa00;}
+</style>
+</head>
+
+<body>
+
+<img src="logo.png" class="logo">
+
+<h2>📊 Archiv (ALLE Nachrichten)</h2>
+
+<table>
+<thead>
+<tr>
+  <th>Typ</th>
+  <th>Nachricht</th>
+  <th>Zeit</th>
+  <th>Status</th>
+</tr>
+</thead>
+
+<tbody id="table"></tbody>
+</table>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCFjuJ-XSN0YnvAilerXPkXbw2iR2ixBv8",
+  authDomain: "kritik-system.firebaseapp.com",
+  databaseURL: "https://kritik-system-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "kritik-system"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// 🔥 DATEN LADEN
+db.ref("test/archive").on("child_added", snap=>{
+  const m = snap.val();
+
+  const tr = document.createElement("tr");
+
+  tr.innerHTML = `
+    <td class="${m.type}">${m.type}</td>
+    <td>${m.text}</td>
+    <td>${new Date(m.time).toLocaleString()}</td>
+    <td style="color:${m.status==="gelöscht"?"red":"#00ff99"}">
+      ${m.status || "aktiv"}
+    </td>
+  `;
+
+  document.getElementById("table").appendChild(tr);
+});
+</script>
+
+</body>
+</html>
