@@ -181,16 +181,19 @@ function start(){
 
 // 👥 ONLINE
 function loadOnline(){
-  db.ref("test/admins").on("value", snap=>{
-    const admins = snap.numChildren();
+  
+db.ref("test/admins").on("value", adminSnap=>{
+  db.ref("test/members").on("value", memberSnap=>{
 
-    db.ref("test/members").once("value", m=>{
-      const members = m.numChildren();
+    const admins = adminSnap.numChildren();
+    const members = memberSnap.numChildren();
 
-      document.getElementById("online").innerText =
-        "👑 Vorstand: "+admins+" | 👥 Mitglieder: "+members;
-    });
+    document.getElementById("online").innerText =
+      "👑 Vorstand: "+admins+" | 👥 Mitglieder: "+members;
+
   });
+});
+  
 }
 
 // 🔥 MESSAGES
@@ -206,6 +209,11 @@ function loadMessages(){
 
     render();
   });
+  
+  db.ref("test/feedback").on("child_removed", snap=>{
+  all = all.filter(m => m.id !== snap.key);
+  render();
+});
 }
 
 function setFilter(f){
