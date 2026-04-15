@@ -152,9 +152,16 @@ function kickMembers(){
 }
 
 function kickAdmins(){
-  db.ref("test/settings/forceLogoutAdmins").set(Date.now());
-  db.ref("test/admins").remove();
-}
+db.ref("test/settings/forceLogoutAdmins").on("value", snap=>{
+  const logoutTime = snap.val();
+  const myLoginTime = localStorage.getItem("adminLoginTime");
+
+  if(logoutTime && myLoginTime && logoutTime > myLoginTime){
+    alert("Du wurdest als Vorstand gekickt!");
+    localStorage.removeItem("adminLoginTime");
+    location.reload();
+  }
+});
 
 // 🔥 MESSAGES
 function loadMessages(){
@@ -233,6 +240,7 @@ function deleteMsg(id){
 // START
 const adminId = localStorage.getItem("adminId") || Date.now().toString();
 localStorage.setItem("adminId", adminId);
+localStorage.setItem("adminLoginTime", Date.now());
 
 db.ref("test/admins/"+adminId).set(true);
 db.ref("test/admins/"+adminId).onDisconnect().remove();
