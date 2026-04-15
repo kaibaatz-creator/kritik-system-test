@@ -10,51 +10,18 @@
 
 <style>
 body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
-
 .logo{height:150px;margin:20px auto;display:block;}
-
 .container{max-width:700px;margin:auto;padding:10px;}
 
-button{
-  padding:10px;
-  border:none;
-  border-radius:10px;
-  cursor:pointer;
-  font-weight:bold;
-  margin:5px;
-}
-
+button{padding:10px;border:none;border-radius:10px;margin:5px;font-weight:bold;cursor:pointer;}
 .orange{background:orange;color:black;}
 .red{background:red;color:white;}
 
-.msg{
-  background:#1e1e1e;
-  margin:10px 0;
-  padding:14px;
-  border-radius:14px;
-  text-align:left;
-}
-
+.msg{background:#1e1e1e;margin:10px 0;padding:14px;border-radius:14px;text-align:left;}
 .msg.Kritik{border-left:4px solid #ff4444;color:#ff4444;}
 .msg.Lob{border-left:4px solid #00ff99;color:#00ff99;}
 .msg.Frage{border-left:4px solid #00bfff;color:#00bfff;}
 .msg.Vorschlag{border-left:4px solid #ffaa00;color:#ffaa00;}
-
-.blink{
-  animation:blink 1s infinite;
-}
-
-@keyframes blink{
-  0%{box-shadow:0 0 5px currentColor;}
-  50%{box-shadow:0 0 20px currentColor;}
-  100%{box-shadow:0 0 5px currentColor;}
-}
-
-.legend span{margin:0 8px;font-weight:bold;}
-.kritik{color:#ff4444;}
-.lob{color:#00ff99;}
-.frage{color:#00bfff;}
-.vorschlag{color:#ffaa00;}
 </style>
 </head>
 
@@ -68,42 +35,14 @@ button{
 
 <div id="online"></div>
 
-<!-- 🔑 PASSWÖRTER NEBENEINANDER -->
-<div style="display:flex;justify-content:center;gap:15px;flex-wrap:wrap;margin-top:10px;">
+<button class="orange" onclick="newPassword()">Mitglieder Passwort</button>
+<button class="orange" onclick="newArchivePassword()">Archiv Passwort</button>
 
-  <div>
-    <button class="orange" onclick="newPassword()">Mitglieder Passwort</button>
-    <div id="pwBox"></div>
-  </div>
-
-  <div>
-    <button class="orange" onclick="newArchivePassword()">Archiv Passwort</button>
-    <div id="archivePwBox"></div>
-  </div>
-
-</div>
-
-<br>
+<div id="pwBox"></div>
+<div id="archivePwBox"></div>
 
 <button class="red" onclick="kickMembers()">Mitglieder kicken</button>
 <button class="red" onclick="kickAdmins()">Vorstand kicken</button>
-
-<div id="stats"></div>
-
-<div class="legend">
-  <span class="kritik">■ Kritik</span>
-  <span class="lob">■ Lob</span>
-  <span class="frage">■ Frage</span>
-  <span class="vorschlag">■ Vorschlag</span>
-</div>
-
-<div>
-  <button onclick="setFilter('all')">Alle</button>
-  <button onclick="setFilter('Kritik')">Kritik</button>
-  <button onclick="setFilter('Lob')">Lob</button>
-  <button onclick="setFilter('Frage')">Frage</button>
-  <button onclick="setFilter('Vorschlag')">Vorschlag</button>
-</div>
 
 <div id="chat"></div>
 
@@ -120,9 +59,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let all=[];
-let currentFilter="all";
-
 // 👥 ONLINE
 function loadOnline(){
   db.ref("test/admins").on("value", a=>{
@@ -133,21 +69,18 @@ function loadOnline(){
   });
 }
 
-// 🔑 PASSWÖRTER
+// 🔑 PASSWORT
 function newPassword(){
   const pw = Math.floor(1000 + Math.random()*9000);
   db.ref("test/settings/memberPassword").set(pw);
   document.getElementById("pwBox").innerText="Code: "+pw;
 }
 
+// 📁 ARCHIV PW
 function newArchivePassword(){
   const pw = Math.floor(1000 + Math.random()*9000);
-
   db.ref("test/settings/archivePassword").set(pw);
-
-  // 🔥 wichtig für Logout
   db.ref("test/settings/archiveLogout").set(Date.now());
-
   document.getElementById("archivePwBox").innerText="Archiv Code: "+pw;
 }
 
@@ -162,89 +95,7 @@ function kickAdmins(){
   db.ref("test/admins").remove();
 }
 
-// 🔥 MESSAGES
-function loadMessages(){
-
-  db.ref("test/feedback").on("child_added", snap=>{
-    const msg={id:snap.key,...snap.val(),isNew:true};
-    all.push(msg);
-
-    setTimeout(()=>{msg.isNew=false;render();},15000);
-    render();
-  });
-
-  db.ref("test/feedback").on("child_removed", snap=>{
-    all = all.filter(m => m.id !== snap.key);
-    render();
-  });
-}
-
-// FILTER
-function setFilter(f){
-  currentFilter=f;
-  render();
-}
-
-// RENDER
-function render(){
-  const chat=document.getElementById("chat");
-  chat.innerHTML="";
-
-  let stats={Kritik:0,Lob:0,Frage:0,Vorschlag:0};
-
-  all.forEach(m=>{
-    if(stats[m.type]!=undefined) stats[m.type]++;
-  });
-
-  document.getElementById("stats").innerText =
-    `Kritik: ${stats.Kritik} | Lob: ${stats.Lob} | Frage: ${stats.Frage} | Vorschlag: ${stats.Vorschlag}`;
-
-  let list=currentFilter==="all"?all:all.filter(m=>m.type===currentFilter);
-
-  list.slice().reverse().forEach(m=>{
-    const div=document.createElement("div");
-    div.className="msg "+m.type+(m.isNew?" blink":"");
-
-    const time=new Date(m.time||Date.now()).toLocaleString();
-
-    div.innerHTML=`
-      <b>${m.type}</b><br>
-      ${m.text}<br>
-      <span style="font-size:12px;color:#888">${time}</span><br>
-      <button class="red" onclick="deleteMsg('${m.id}')">Löschen</button>
-    `;
-
-    chat.appendChild(div);
-  });
-}
-
-// 🧹 LÖSCHEN + ARCHIV UPDATE
-function deleteMsg(id){
-
-  const pw = prompt("Passwort zum Löschen:");
-
-  if(pw !== "2"){
-    alert("Falsches Passwort");
-    return;
-  }
-
-  db.ref("test/archive/"+id).update({
-    status: "gelöscht",
-    deletedAt: Date.now()
-  });
-
-  db.ref("test/feedback/"+id).remove();
-}
-
-// START
-const adminId = localStorage.getItem("adminId") || Date.now().toString();
-localStorage.setItem("adminId", adminId);
-
-db.ref("test/admins/"+adminId).set(true);
-db.ref("test/admins/"+adminId).onDisconnect().remove();
-
 loadOnline();
-loadMessages();
 </script>
 
 </body>
