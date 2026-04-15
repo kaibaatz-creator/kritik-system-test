@@ -9,48 +9,10 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <style>
-body{
-  background:#000;
-  color:white;
-  font-family:Arial;
-  text-align:center;
-  margin:0;
-}
+body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
+.logo{height:150px;margin:20px auto;display:block;}
+.container{max-width:700px;margin:auto;padding:10px;}
 
-/* LOGO */
-.logo{
-  height:150px;
-  margin:20px auto;
-  display:block;
-}
-
-/* CONTAINER */
-.container{
-  max-width:700px;
-  margin:auto;
-  padding:10px;
-}
-
-/* BUTTON GROUP */
-.btn-group{
-  display:flex;
-  flex-wrap:wrap;
-  justify-content:center;
-  gap:10px;
-}
-
-/* MOBILE */
-@media(max-width:600px){
-  .btn-group{
-    flex-direction:column;
-  }
-
-  button{
-    width:100%;
-  }
-}
-
-/* BUTTON */
 button{
   padding:12px;
   border-radius:10px;
@@ -59,7 +21,18 @@ button{
   font-weight:bold;
 }
 
-/* MESSAGE */
+.btn-group{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:10px;
+}
+
+@media(max-width:600px){
+  .btn-group{flex-direction:column;}
+  button{width:100%;}
+}
+
 .msg{
   background:#1e1e1e;
   margin:10px 0;
@@ -68,81 +41,34 @@ button{
   text-align:left;
 }
 
-.msg.Kritik{border-left:4px solid #ff4444; color:#ff4444;}
-.msg.Lob{border-left:4px solid #00ff99; color:#00ff99;}
-.msg.Frage{border-left:4px solid #00bfff; color:#00bfff;}
-.msg.Vorschlag{border-left:4px solid #ffaa00; color:#ffaa00;}
+.msg.Kritik{border-left:4px solid #ff4444;color:#ff4444;}
+.msg.Lob{border-left:4px solid #00ff99;color:#00ff99;}
+.msg.Frage{border-left:4px solid #00bfff;color:#00bfff;}
+.msg.Vorschlag{border-left:4px solid #ffaa00;color:#ffaa00;}
 
-/* BLINK */
-.blink{
-  animation:blink 1s infinite;
-}
-
+.blink{animation:blink 1s infinite;}
 @keyframes blink{
   0%{box-shadow:0 0 5px currentColor;}
   50%{box-shadow:0 0 20px currentColor;}
   100%{box-shadow:0 0 5px currentColor;}
 }
 
-/* LEGENDE */
-.legend span{
-  margin:0 8px;
-  font-weight:bold;
-}
-
+.legend span{margin:0 8px;font-weight:bold;}
 .kritik{color:#ff4444;}
 .lob{color:#00ff99;}
 .frage{color:#00bfff;}
 .vorschlag{color:#ffaa00;}
-
 </style>
 </head>
 
 <body>
 
-<img src="logo.png" class="logo">
-
-<div class="container">
-
-<h2>👑 Vorstand (Test)</h2>
-
-<div class="btn-group">
-  <button onclick="generatePassword()" style="background:orange;">
-    Neues Passwort
-  </button>
-</div>
-
-<div id="pwBox"></div>
-
-<div class="btn-group">
-  <button onclick="kickMembers()" style="background:red;color:white;">
-    Mitglieder kicken
-  </button>
-
-  <button onclick="kickAdmins()" style="background:darkred;color:white;">
-    Vorstand kicken
-  </button>
-</div>
-
-<div id="stats"></div>
-
-<div class="legend">
-  <span class="kritik">■ Kritik</span>
-  <span class="lob">■ Lob</span>
-  <span class="frage">■ Frage</span>
-  <span class="vorschlag">■ Vorschlag</span>
-</div>
-
-<div class="btn-group">
-  <button onclick="setFilter('all')">Alle</button>
-  <button onclick="setFilter('Kritik')">Kritik</button>
-  <button onclick="setFilter('Lob')">Lob</button>
-  <button onclick="setFilter('Frage')">Frage</button>
-  <button onclick="setFilter('Vorschlag')">Vorschlag</button>
-</div>
-
-<div id="chat"></div>
-
+<div id="login">
+  <img src="logo.png" class="logo">
+  <h2>👑 Vorstand Login</h2>
+  <input id="pw" placeholder="Code">
+  <button onclick="login()">Login</button>
+  <div id="error" style="color:red;"></div>
 </div>
 
 <script>
@@ -156,55 +82,132 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let all = [];
+let currentPassword = "";
+let adminId = localStorage.getItem("adminId");
+
+// 🔑 Passwort holen (gleich wie Mitglieder)
+db.ref("test/settings/memberPassword").on("value", snap=>{
+  currentPassword = snap.val() || "";
+});
+
+// 🔐 LOGIN
+function login(){
+  const pw = document.getElementById("pw").value;
+
+  if(pw === currentPassword){
+    adminId = Date.now().toString();
+    localStorage.setItem("adminId", adminId);
+    localStorage.setItem("adminLoginTime", Date.now());
+    start();
+  } else {
+    document.getElementById("error").innerText="Falscher Code";
+  }
+}
+
+// 🔄 AUTO LOGIN
+if(localStorage.getItem("adminId")){
+  start();
+}
+
+function start(){
+
+  document.getElementById("login").style.display="none";
+
+  adminId = localStorage.getItem("adminId");
+
+  // 👉 als admin registrieren
+  db.ref("test/admins/"+adminId).set(true);
+  db.ref("test/admins/"+adminId).onDisconnect().remove();
+
+  // 👉 KICK FIX
+  db.ref("test/settings/forceLogoutAdmins").on("value", snap=>{
+    const logoutTime = snap.val();
+    const myLoginTime = localStorage.getItem("adminLoginTime");
+
+    if(logoutTime && myLoginTime && logoutTime > myLoginTime){
+      alert("Du wurdest gekickt!");
+      localStorage.clear();
+      location.reload();
+    }
+  });
+
+  document.body.innerHTML = `
+  <img src="logo.png" class="logo">
+  <div class="container">
+
+  <h2>👑 Vorstand (Test)</h2>
+
+  <div id="online"></div>
+
+  <div class="btn-group">
+    <button onclick="generatePassword()" style="background:orange;">
+      Neues Passwort
+    </button>
+  </div>
+
+  <div id="pwBox"></div>
+
+  <div class="btn-group">
+    <button onclick="kickMembers()" style="background:red;color:white;">
+      Mitglieder kicken
+    </button>
+    <button onclick="kickAdmins()" style="background:darkred;color:white;">
+      Vorstand kicken
+    </button>
+  </div>
+
+  <div id="stats"></div>
+
+  <div class="legend">
+    <span class="kritik">■ Kritik</span>
+    <span class="lob">■ Lob</span>
+    <span class="frage">■ Frage</span>
+    <span class="vorschlag">■ Vorschlag</span>
+  </div>
+
+  <div class="btn-group">
+    <button onclick="setFilter('all')">Alle</button>
+    <button onclick="setFilter('Kritik')">Kritik</button>
+    <button onclick="setFilter('Lob')">Lob</button>
+    <button onclick="setFilter('Frage')">Frage</button>
+    <button onclick="setFilter('Vorschlag')">Vorschlag</button>
+  </div>
+
+  <div id="chat"></div>
+  </div>
+  `;
+
+  loadOnline();
+  loadMessages();
+}
+
+// 👥 ONLINE COUNTER
+function loadOnline(){
+  db.ref("test/admins").on("value", snap=>{
+    const admins = snap.numChildren();
+    db.ref("test/members").once("value", m=>{
+      const members = m.numChildren();
+      document.getElementById("online").innerText =
+        "👑 Vorstand: "+admins+" | 👥 Mitglieder: "+members;
+    });
+  });
+}
+
+// 🔥 MESSAGES
+let all=[];
 let currentFilter="all";
 
-// 🔥 ADMIN SESSION (NEU!)
-const adminId = localStorage.getItem("adminId") || Date.now().toString();
-localStorage.setItem("adminId", adminId);
+function loadMessages(){
+  db.ref("test/feedback").on("child_added", snap=>{
+    const msg={id:snap.key,...snap.val(),isNew:true};
+    all.push(msg);
 
-// 👉 Vorstand registrieren
-db.ref("test/admins/"+adminId).set(true);
-db.ref("test/admins/"+adminId).onDisconnect().remove();
-
-// 👉 ADMIN KICK LISTENER (JETZT FUNKTIONIERT ES!)
-const adminLoginTime = localStorage.getItem("adminLoginTime");
-
-// 👉 Auto Login setzen wenn nicht vorhanden
-if(!adminLoginTime){
-  localStorage.setItem("adminLoginTime", Date.now());
+    setTimeout(()=>{msg.isNew=false;render();},15000);
+    render();
+  });
 }
 
-db.ref("test/settings/forceLogoutAdmins").on("value", snap=>{
-  const logoutTime = snap.val();
-  const myLoginTime = localStorage.getItem("adminLoginTime");
-
-  if(logoutTime && myLoginTime && logoutTime > myLoginTime){
-    alert("Vorstand wurde gekickt!");
-    localStorage.removeItem("adminLoginTime");
-    location.reload();
-  }
-});
-
-// 🔥 LIVE
-db.ref("test/feedback").on("child_added", snap=>{
-  const msg = {
-    id: snap.key,
-    ...snap.val(),
-    isNew:true
-  };
-
-  all.push(msg);
-
-  setTimeout(()=>{msg.isNew=false; render();},15000);
-
-  render();
-});
-
-function setFilter(f){
-  currentFilter=f;
-  render();
-}
+function setFilter(f){currentFilter=f;render();}
 
 function render(){
   const chat=document.getElementById("chat");
@@ -219,18 +222,15 @@ function render(){
   document.getElementById("stats").innerText =
     `Kritik: ${stats.Kritik} | Lob: ${stats.Lob} | Frage: ${stats.Frage} | Vorschlag: ${stats.Vorschlag}`;
 
-  let list = currentFilter==="all"?all:all.filter(m=>m.type===currentFilter);
+  let list=currentFilter==="all"?all:all.filter(m=>m.type===currentFilter);
 
   list.slice().reverse().forEach(m=>{
     const div=document.createElement("div");
     div.className="msg "+m.type+(m.isNew?" blink":"");
 
-    const time=new Date(m.time||Date.now()).toLocaleString();
-
     div.innerHTML=`
       <b>${m.type}</b><br>
       ${m.text}<br>
-      <span style="font-size:12px;color:#888">${time}</span><br>
       <button onclick="deleteMsg('${m.id}')" style="background:red;color:white;">
         Löschen
       </button>
@@ -240,37 +240,31 @@ function render(){
   });
 }
 
+// DELETE
 function deleteMsg(id){
-  if(confirm("Löschen?")){
-    db.ref("test/feedback/"+id).remove();
-    location.reload();
-  }
+  db.ref("test/feedback/"+id).remove();
+  location.reload();
 }
 
+// PASSWORD
 db.ref("test/settings/memberPassword").on("value", snap=>{
-  document.getElementById("pwBox").innerText =
-    "Code: "+(snap.val()||"-");
+  const el=document.getElementById("pwBox");
+  if(el) el.innerText="Code: "+(snap.val()||"-");
 });
 
 function generatePassword(){
-  const newPw = Math.floor(1000 + Math.random()*9000).toString();
-
+  const newPw=Math.floor(1000+Math.random()*9000).toString();
   db.ref("test/settings/memberPassword").set(newPw);
   db.ref("test/settings/forceLogoutMembers").set(Date.now());
-
-  alert("Neuer Code: "+newPw);
 }
 
+// KICK
 function kickMembers(){
-  if(confirm("Mitglieder kicken?")){
-    db.ref("test/settings/forceLogoutMembers").set(Date.now());
-  }
+  db.ref("test/settings/forceLogoutMembers").set(Date.now());
 }
 
 function kickAdmins(){
-  if(confirm("ALLE Vorstände kicken?")){
-    db.ref("test/settings/forceLogoutAdmins").set(Date.now());
-  }
+  db.ref("test/settings/forceLogoutAdmins").set(Date.now());
 }
 </script>
 
