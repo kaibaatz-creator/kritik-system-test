@@ -30,25 +30,26 @@ body {
   border-radius:14px;
   max-width:700px;
   text-align:left;
-  transition:0.3s;
 }
 
-.msg.Kritik{border-left:4px solid #ff4444;}
-.msg.Lob{border-left:4px solid #00ff99;}
-.msg.Frage{border-left:4px solid #00bfff;}
-.msg.Vorschlag{border-left:4px solid #ffaa00;}
+/* FARBEN */
+.msg.Kritik{border-left:4px solid #ff4444; color:#ff4444;}
+.msg.Lob{border-left:4px solid #00ff99; color:#00ff99;}
+.msg.Frage{border-left:4px solid #00bfff; color:#00bfff;}
+.msg.Vorschlag{border-left:4px solid #ffaa00; color:#ffaa00;}
 
-/* 🔥 Highlight neue Nachricht */
-.new{
-  animation: glow 10s ease;
+/* 🔥 BLINKEN */
+.blink{
+  animation: blinkBorder 1s infinite;
 }
 
-@keyframes glow{
-  0%{box-shadow:0 0 15px currentColor;}
-  100%{box-shadow:none;}
+@keyframes blinkBorder{
+  0%{box-shadow:0 0 5px currentColor;}
+  50%{box-shadow:0 0 20px currentColor;}
+  100%{box-shadow:0 0 5px currentColor;}
 }
 
-/* BUTTONS */
+/* BUTTON */
 button{
   padding:10px;
   margin:5px;
@@ -77,7 +78,7 @@ button{
 
 <h2>👑 Vorstand (Test)</h2>
 
-<!-- 🔐 Passwort -->
+<!-- 🔑 Passwort -->
 <div>
   <button onclick="generatePassword()" style="background:orange;">
     Neues Mitglieder Passwort
@@ -85,10 +86,14 @@ button{
   <div id="pwBox"></div>
 </div>
 
-<!-- 🚫 KICK -->
+<!-- 🚫 KICK BUTTONS -->
 <div>
   <button onclick="kickMembers()" style="background:red;color:white;">
     Mitglieder kicken
+  </button>
+
+  <button onclick="kickAdmins()" style="background:darkred;color:white;">
+    Vorstand kicken
   </button>
 </div>
 
@@ -138,7 +143,10 @@ db.ref("test/feedback").on("child_added", snap=>{
 
   all.push(msg);
 
-  setTimeout(()=>{ msg.isNew = false; render(); },10000);
+  setTimeout(()=>{
+    msg.isNew = false;
+    render();
+  },15000); // 👉 15 Sekunden
 
   render();
 });
@@ -171,7 +179,8 @@ function render(){
 
   list.slice().reverse().forEach(m=>{
     const div=document.createElement("div");
-    div.className="msg "+m.type+(m.isNew?" new":"");
+
+    div.className="msg "+m.type+(m.isNew?" blink":"");
 
     const date = new Date(m.time || Date.now());
     const time = date.toLocaleString();
@@ -213,10 +222,18 @@ function generatePassword(){
   alert("Neuer Code: " + newPw);
 }
 
-// 🚫 KICK Mitglieder
+// 🚫 Mitglieder kicken
 function kickMembers(){
   if(confirm("Alle Mitglieder kicken?")){
     db.ref("test/settings/forceLogoutMembers").set(Date.now());
+  }
+}
+
+// 👑 Vorstand kicken
+function kickAdmins(){
+  if(confirm("Alle Vorstände kicken?")){
+    db.ref("test/settings/forceLogoutAdmins").set(Date.now());
+    location.reload();
   }
 }
 </script>
