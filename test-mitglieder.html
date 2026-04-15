@@ -14,14 +14,15 @@ body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
 .container{max-width:700px;margin:auto;padding:10px;}
 
 button{
-  padding:12px;
-  border-radius:10px;
+  padding:10px;
   border:none;
+  border-radius:10px;
   cursor:pointer;
   font-weight:bold;
+  margin:5px;
 }
 
-/* MESSAGES */
+/* Nachrichten */
 .msg{
   background:#1e1e1e;
   margin:10px 0;
@@ -35,7 +36,6 @@ button{
 .msg.Frage{border-left:4px solid #00bfff;color:#00bfff;}
 .msg.Vorschlag{border-left:4px solid #ffaa00;color:#ffaa00;}
 
-/* BLINK */
 .blink{
   animation:blink 1s infinite;
 }
@@ -46,7 +46,7 @@ button{
   100%{box-shadow:0 0 5px currentColor;}
 }
 
-/* LEGENDE */
+/* Legende */
 .legend span{
   margin:0 8px;
   font-weight:bold;
@@ -61,7 +61,6 @@ button{
 
 <body>
 
-<!-- LOGIN -->
 <div id="login">
   <img src="logo.png" class="logo">
   <h2>👥 Mitglieder Login</h2>
@@ -81,16 +80,16 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let currentPassword="";
 let all=[];
 let currentFilter="all";
+let currentPassword="";
 
 // 🔑 Passwort holen
 db.ref("test/settings/memberPassword").on("value", snap=>{
   currentPassword = snap.val() || "";
 });
 
-// 🔐 LOGIN
+// LOGIN
 function login(){
   const pw=document.getElementById("pw").value;
 
@@ -177,17 +176,12 @@ function start(){
   loadMessages();
 }
 
-// 👥 ONLINE COUNTER
+// 👥 ONLINE
 function loadOnline(){
-  db.ref("test/admins").on("value", adminSnap=>{
-    db.ref("test/members").on("value", memberSnap=>{
-
-      const admins = adminSnap.numChildren();
-      const members = memberSnap.numChildren();
-
+  db.ref("test/admins").on("value", a=>{
+    db.ref("test/members").on("value", m=>{
       document.getElementById("online").innerText =
-        "👑 Vorstand: "+admins+" | 👥 Mitglieder: "+members;
-
+        "👑 Vorstand: "+a.numChildren()+" | 👥 Mitglieder: "+m.numChildren();
     });
   });
 }
@@ -247,17 +241,26 @@ function render(){
   });
 }
 
-// SENDEN
+// 📤 SENDEN + ARCHIV
 function send(){
   const text=document.getElementById("text").value;
   const type=document.getElementById("type").value;
 
   if(!text) return;
 
-  db.ref("test/feedback").push({
+  const newMsg = {
     text,
     type,
-    time:Date.now()
+    time: Date.now()
+  };
+
+  // LIVE
+  db.ref("test/feedback").push(newMsg);
+
+  // ARCHIV (IMMER!)
+  db.ref("test/archive").push({
+    ...newMsg,
+    status: "aktiv"
   });
 
   document.getElementById("text").value="";
