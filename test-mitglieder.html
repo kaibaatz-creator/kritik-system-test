@@ -9,40 +9,38 @@
 
 <style>
 body { background:#000; color:white; font-family:Arial; }
-.msg{background:#1e1e1e;margin:10px;padding:14px;border-radius:14px;}
+
+.msg{
+  background:#1e1e1e;
+  margin:10px;
+  padding:14px;
+  border-radius:14px;
+}
+
 .msg.Kritik{border-left:4px solid #ff4444;}
 .msg.Lob{border-left:4px solid #00ff99;}
 .msg.Frage{border-left:4px solid #00bfff;}
 .msg.Vorschlag{border-left:4px solid #ffaa00;}
+
+button{
+  padding:10px;
+  margin:5px;
+  border-radius:10px;
+  border:none;
+  cursor:pointer;
+}
 </style>
 </head>
 
 <body>
 
-<h2 style="text-align:center;">👥 Mitglieder (Test)</h2>
-
-<div style="text-align:center;">
-  <input id="text" placeholder="Nachricht">
-  <select id="type">
-    <option>Kritik</option>
-    <option>Lob</option>
-    <option>Frage</option>
-    <option>Vorschlag</option>
-  </select>
-  <button onclick="send()">Senden</button>
+<!-- 🔐 LOGIN -->
+<div id="login" style="text-align:center;margin-top:100px;">
+  <h2>🔐 Mitglieder Login</h2>
+  <input id="pw" placeholder="Code">
+  <button onclick="login()">Login</button>
+  <div id="error" style="color:red;"></div>
 </div>
-  
-<div id="stats" style="text-align:center;margin:10px;"></div>
-
-<div style="text-align:center;">
-  <button onclick="setFilter('all')">Alle</button>
-  <button onclick="setFilter('Kritik')">Kritik</button>
-  <button onclick="setFilter('Lob')">Lob</button>
-  <button onclick="setFilter('Frage')">Frage</button>
-  <button onclick="setFilter('Vorschlag')">Vorschlag</button>
-</div>
-  
-<div id="chat"></div>
 
 <script>
 const firebaseConfig = {
@@ -57,23 +55,94 @@ const db = firebase.database();
 
 let all = [];
 let currentFilter = "all";
+let currentPassword = "";
 
-// 🔥 LIVE
-db.ref("test/feedback").on("child_added", snap=>{
-  all.push(snap.val());
-  render();
+// 🔑 Passwort holen
+db.ref("test/settings/memberPassword").on("value", snap=>{
+  currentPassword = snap.val() || "";
 });
 
-// FILTER setzen
+// 🔄 Auto Login
+const loginTime = localStorage.getItem("loginTimeTest");
+if(loginTime){
+  start();
+}
+
+// 🔐 LOGIN
+function login(){
+  const pw = document.getElementById("pw").value;
+
+  if(pw === currentPassword){
+    localStorage.setItem("loginTimeTest", Date.now());
+    start();
+  } else {
+    document.getElementById("error").innerText = "Falscher Code";
+  }
+}
+
+// 🚀 START (Hauptsystem)
+function start(){
+
+  // 🔥 Kick Listener
+  db.ref("test/settings/forceLogoutMembers").on("value", snap=>{
+    const logoutTime = snap.val();
+    const myLoginTime = localStorage.getItem("loginTimeTest");
+
+    if (logoutTime && myLoginTime && logoutTime > myLoginTime) {
+      alert("Du wurdest ausgeloggt!");
+      localStorage.removeItem("loginTimeTest");
+      location.reload();
+    }
+  });
+
+  document.body.innerHTML = `
+    <h2 style="text-align:center;">👥 Mitglieder (Test)</h2>
+
+    <div style="text-align:center;">
+      <input id="text" placeholder="Nachricht">
+      <select id="type">
+        <option>Kritik</option>
+        <option>Lob</option>
+        <option>Frage</option>
+        <option>Vorschlag</option>
+      </select>
+      <button onclick="send()">Senden</button>
+    </div>
+
+    <div id="stats" style="text-align:center;margin:10px;"></div>
+
+    <div style="text-align:center;">
+      <button onclick="setFilter('all')">Alle</button>
+      <button onclick="setFilter('Kritik')">Kritik</button>
+      <button onclick="setFilter('Lob')">Lob</button>
+      <button onclick="setFilter('Frage')">Frage</button>
+      <button onclick="setFilter('Vorschlag')">Vorschlag</button>
+    </div>
+
+    <div id="chat"></div>
+  `;
+
+  load();
+}
+
+// 🔥 LIVE DATA
+function load(){
+  db.ref("test/feedback").on("child_added", snap=>{
+    all.push(snap.val());
+    render();
+  });
+}
+
+// 🎯 FILTER
 function setFilter(filter){
   currentFilter = filter;
   render();
 }
 
-// RENDER
+// 📊 RENDER
 function render(){
   const chat = document.getElementById("chat");
-  chat.innerHTML="";
+  chat.innerHTML = "";
 
   let stats = {Kritik:0,Lob:0,Frage:0,Vorschlag:0};
 
@@ -83,34 +152,27 @@ function render(){
     }
   });
 
-  // 👉 Stats anzeigen (falls vorhanden)
-  if(document.getElementById("stats")){
-    document.getElementById("stats").innerHTML = `
-      Kritik: ${stats.Kritik} |
-      Lob: ${stats.Lob} |
-      Frage: ${stats.Frage} |
-      Vorschlag: ${stats.Vorschlag}
-    `;
-  }
+  document.getElementById("stats").innerText =
+    `Kritik: ${stats.Kritik} | Lob: ${stats.Lob} | Frage: ${stats.Frage} | Vorschlag: ${stats.Vorschlag}`;
 
   let list = all;
 
   if(currentFilter !== "all"){
-    list = all.filter(m=>m.type === currentFilter);
+    list = all.filter(m => m.type === currentFilter);
   }
 
   list.slice().reverse().forEach(m=>{
-    const div=document.createElement("div");
-    div.className="msg "+m.type;
-    div.innerHTML=`<b>${m.type}</b><br>${m.text}`;
+    const div = document.createElement("div");
+    div.className = "msg " + m.type;
+    div.innerHTML = `<b>${m.type}</b><br>${m.text}`;
     chat.appendChild(div);
   });
 }
 
-// SENDEN (nur Mitglieder-Seite nutzen!)
+// ✉️ SENDEN
 function send(){
-  const text = document.getElementById("text")?.value;
-  const type = document.getElementById("type")?.value;
+  const text = document.getElementById("text").value;
+  const type = document.getElementById("type").value;
 
   if(!text) return;
 
