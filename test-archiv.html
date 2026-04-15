@@ -106,6 +106,7 @@ function start(){
   <br>
 
   <button class="red" onclick="clearArchive()">Archiv löschen</button>
+  <button onclick="exportCSV()">Export Excel</button>
 
   <table>
     <thead>
@@ -203,6 +204,33 @@ db.ref("test/settings/archiveLogout").on("value", snap=>{
     location.reload();
   }
 });
+  function exportCSV(){
+
+  if(all.length === 0){
+    alert("Keine Daten vorhanden");
+    return;
+  }
+
+  let csv = "Typ;Nachricht;Zeit;Status\n";
+
+  all.forEach(m=>{
+    const time = new Date(m.time).toLocaleString();
+
+    // Sonderzeichen absichern
+    const text = m.text.replace(/;/g, ",").replace(/\n/g, " ");
+
+    csv += `${m.type};${text};${time};${m.status}\n`;
+  });
+
+  // Datei erstellen
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "archiv.csv";
+  link.click();
+}
 </script>
 
 </body>
