@@ -7,6 +7,8 @@
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
 body{background:#000;color:white;font-family:Arial;text-align:center;}
@@ -111,7 +113,7 @@ function start(){
   <br>
 
   <button class="red" onclick="clearArchive()">Archiv löschen</button>
-  <button onclick="exportCSV()">Export Excel</button>
+  <button onclick="exportExcel()">Export Excel</button>
 
   <table>
     <thead>
@@ -235,6 +237,28 @@ db.ref("test/settings/archiveLogout").on("value", snap=>{
   link.href = url;
   link.download = "archiv.csv";
   link.click();
+}
+
+function exportExcel(){
+
+  if(all.length === 0){
+    alert("Keine Daten vorhanden");
+    return;
+  }
+
+  const data = all.map(m => ({
+    Typ: m.type,
+    Nachricht: m.text,
+    Zeit: new Date(m.time).toLocaleString(),
+    Status: m.status
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(data);
+  const workbook = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Archiv");
+
+  XLSX.writeFile(workbook, "archiv.xlsx");
 }
 </script>
 
