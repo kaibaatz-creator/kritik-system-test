@@ -3,116 +3,63 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mitglieder (Test)</title>
+<title>Mitglieder</title>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <style>
 body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
-
 .logo{height:150px;margin:20px auto;display:block;}
-
 .container{max-width:700px;margin:auto;padding:10px;}
 
-button{
-  padding:10px;
-  border:none;
-  border-radius:10px;
-  cursor:pointer;
-  font-weight:bold;
-  margin:5px;
-}
-
-.msg{
-  background:#1e1e1e;
-  margin:10px 0;
-  padding:14px;
-  border-radius:14px;
-  text-align:left;
-}
-
-.msg.Kritik{border-left:4px solid #ff4444;color:#ff4444;}
-.msg.Lob{border-left:4px solid #00ff99;color:#00ff99;}
-.msg.Frage{border-left:4px solid #00bfff;color:#00bfff;}
-.msg.Vorschlag{border-left:4px solid #ffaa00;color:#ffaa00;}
-
-.legend span{margin:0 8px;font-weight:bold;}
-.kritik{color:#ff4444;}
-.lob{color:#00ff99;}
-.frage{color:#00bfff;}
-.vorschlag{color:#ffaa00;}
+button{padding:10px;border:none;border-radius:10px;margin:5px;font-weight:bold;}
 
 #text{
   width:90%;
   min-height:120px;
   border-radius:10px;
   padding:10px;
-  font-size:14px;
-  resize:none;
 }
 </style>
 </head>
 
 <body>
 
-<!-- 🔐 LOGIN -->
+<!-- LOGIN -->
 <div id="login">
-
   <img src="logo.png" class="logo">
   <h2>👥 Mitglieder Login</h2>
-
-  <input id="pw" placeholder="Code">
+  <input id="pw">
   <button onclick="login()">Login</button>
-
   <div id="error" style="color:red;"></div>
-
 </div>
 
-<!-- ✅ APP -->
+<!-- APP -->
 <div id="app" style="display:none;">
 
-  <img src="logo.png" class="logo">
+<img src="logo.png" class="logo">
 
-  <div class="container">
+<div class="container">
 
-  <h2>👥 Mitglieder (Test)</h2>
+<h2>👥 Mitglieder</h2>
 
-  <div id="online"></div>
+<div id="online"></div>
 
-  <!-- Eingabe -->
-  <textarea id="text" placeholder="Nachricht"></textarea>
-  <br>
+<textarea id="text" placeholder="Nachricht"></textarea><br>
 
-  <select id="type">
-    <option>Kritik</option>
-    <option>Lob</option>
-    <option>Frage</option>
-    <option>Vorschlag</option>
-  </select>
+<select id="type">
+  <option>Kritik</option>
+  <option>Lob</option>
+  <option>Frage</option>
+  <option>Vorschlag</option>
+</select>
 
-  <button onclick="send()">Senden</button>
+<button onclick="send()">Senden</button>
 
-  <div id="stats"></div>
+<div id="chat"></div>
 
-  <div class="legend">
-    <span class="kritik">■ Kritik</span>
-    <span class="lob">■ Lob</span>
-    <span class="frage">■ Frage</span>
-    <span class="vorschlag">■ Vorschlag</span>
-  </div>
-
-  <div>
-    <button onclick="setFilter('all')">Alle</button>
-    <button onclick="setFilter('Kritik')">Kritik</button>
-    <button onclick="setFilter('Lob')">Lob</button>
-    <button onclick="setFilter('Frage')">Frage</button>
-    <button onclick="setFilter('Vorschlag')">Vorschlag</button>
-  </div>
-
-  <div id="chat"></div>
-
-  </div>
+</div>
 </div>
 
 <script>
@@ -127,8 +74,6 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let currentPassword="";
-let all=[];
-let currentFilter="all";
 
 // 🔑 PASSWORT LADEN
 db.ref("test/settings/memberPassword").on("value", snap=>{
@@ -166,6 +111,18 @@ function start(){
 
   loadOnline();
   loadMessages();
+
+  // 🚨 FORCE LOGOUT
+  db.ref("test/settings/forceLogoutMembers").on("value", snap=>{
+    const logoutTime = snap.val();
+    const loginTime = localStorage.getItem("memberLoginTime");
+
+    if(logoutTime && loginTime && logoutTime > loginTime){
+      alert("Du wurdest ausgeloggt");
+      localStorage.clear();
+      location.reload();
+    }
+  });
 }
 
 // 👥 ONLINE
@@ -178,20 +135,20 @@ function loadOnline(){
   });
 }
 
-// 📤 SENDEN + ARCHIV
+// 📤 SENDEN
 function send(){
   const text=document.getElementById("text").value;
   const type=document.getElementById("type").value;
 
   if(!text) return;
 
-  const newMsg = {
+  const newMsg={
     text,
     type,
-    time: Date.now()
+    time:Date.now()
   };
 
-  const ref = db.ref("test/feedback").push(newMsg);
+  const ref=db.ref("test/feedback").push(newMsg);
 
   db.ref("test/archive/"+ref.key).set({
     ...newMsg,
@@ -202,24 +159,13 @@ function send(){
 }
 
 // 🔥 MESSAGES
+let all=[];
+
 function loadMessages(){
-
   db.ref("test/feedback").on("child_added", snap=>{
-    const msg={id:snap.key,...snap.val()};
-    all.push(msg);
+    all.push(snap.val());
     render();
   });
-
-  db.ref("test/feedback").on("child_removed", snap=>{
-    all = all.filter(m => m.id !== snap.key);
-    render();
-  });
-}
-
-// FILTER
-function setFilter(f){
-  currentFilter=f;
-  render();
 }
 
 // RENDER
@@ -227,29 +173,9 @@ function render(){
   const chat=document.getElementById("chat");
   chat.innerHTML="";
 
-  let stats={Kritik:0,Lob:0,Frage:0,Vorschlag:0};
-
-  all.forEach(m=>{
-    if(stats[m.type]!=undefined) stats[m.type]++;
-  });
-
-  document.getElementById("stats").innerText =
-    `Kritik: ${stats.Kritik} | Lob: ${stats.Lob} | Frage: ${stats.Frage} | Vorschlag: ${stats.Vorschlag}`;
-
-  let list=currentFilter==="all"?all:all.filter(m=>m.type===currentFilter);
-
-  list.slice().reverse().forEach(m=>{
+  all.slice().reverse().forEach(m=>{
     const div=document.createElement("div");
-    div.className="msg "+m.type;
-
-    const time=new Date(m.time).toLocaleString();
-
-    div.innerHTML=`
-      <b>${m.type}</b><br>
-      ${m.text}<br>
-      <span style="font-size:12px;color:#888">${time}</span>
-    `;
-
+    div.innerHTML=`<b>${m.type}</b><br>${m.text}`;
     chat.appendChild(div);
   });
 }
