@@ -96,6 +96,13 @@ db.ref("test/feedback").on("child_added", snap => {
 });
 
 function send(){
+  const isAdmin = false; // 👉 später dynamisch
+
+  if(!isAdmin){
+    alert("Nur Mitglieder dürfen schreiben!");
+    return;
+  }
+
   const text = document.getElementById("text").value;
   const type = document.getElementById("type").value;
 
@@ -106,6 +113,9 @@ function send(){
     type: type,
     time: Date.now()
   });
+
+  document.getElementById("text").value="";
+}
 
   document.getElementById("text").value="";
 }
