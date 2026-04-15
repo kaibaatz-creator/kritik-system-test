@@ -74,6 +74,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let archivePw="";
+let loginTime = 0;
 let all=[];
 
 // 🔑 Passwort laden
@@ -86,7 +87,18 @@ function login(){
   const pw=document.getElementById("pw").value;
 
   if(pw === String(archivePw)){
+    loginTime = Date.now();
     start();
+
+  db.ref("test/settings/archiveLogout").on("value", snap=>{
+  const logoutTime = snap.val();
+
+  if(logoutTime && loginTime && logoutTime > loginTime){
+    alert("Archiv Passwort wurde geändert!");
+    location.reload();
+  }
+});
+    
   }else{
     document.getElementById("error").innerText="Falscher Code";
   }
@@ -186,7 +198,8 @@ function clearArchive(){
 
   db.ref("test/archive").remove();
   alert("Archiv gelöscht");
-  location.reload();
+all = [];
+document.getElementById("table").innerHTML = "";;
 }
 </script>
 
