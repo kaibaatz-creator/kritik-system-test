@@ -2,64 +2,53 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mitglieder (Test)</title>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <style>
-body {
-  background:#000;
-  color:white;
-  font-family:Arial;
-  text-align:center;
-}
+body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
+.logo{height:150px;margin:20px auto;display:block;}
+.container{max-width:700px;margin:auto;padding:10px;}
 
-/* LOGO */
-.logo{
-  height:150px;
-  margin:20px auto;
-  display:block;
+button{
+  padding:12px;
+  border-radius:10px;
+  border:none;
+  cursor:pointer;
+  font-weight:bold;
 }
 
 /* MESSAGES */
 .msg{
   background:#1e1e1e;
-  margin:10px auto;
+  margin:10px 0;
   padding:14px;
   border-radius:14px;
-  max-width:700px;
   text-align:left;
-  transition:0.3s;
 }
 
-.msg.Kritik{border-left:4px solid #ff4444;}
-.msg.Lob{border-left:4px solid #00ff99;}
-.msg.Frage{border-left:4px solid #00bfff;}
-.msg.Vorschlag{border-left:4px solid #ffaa00;}
+.msg.Kritik{border-left:4px solid #ff4444;color:#ff4444;}
+.msg.Lob{border-left:4px solid #00ff99;color:#00ff99;}
+.msg.Frage{border-left:4px solid #00bfff;color:#00bfff;}
+.msg.Vorschlag{border-left:4px solid #ffaa00;color:#ffaa00;}
 
-/* 🔥 Highlight */
-.new{
-  animation: glow 10s ease;
+/* BLINK */
+.blink{
+  animation:blink 1s infinite;
 }
 
-@keyframes glow{
-  0%{box-shadow:0 0 15px currentColor;}
-  100%{box-shadow:none;}
-}
-
-/* BUTTON */
-button{
-  padding:10px;
-  margin:5px;
-  border-radius:10px;
-  border:none;
-  cursor:pointer;
+@keyframes blink{
+  0%{box-shadow:0 0 5px currentColor;}
+  50%{box-shadow:0 0 20px currentColor;}
+  100%{box-shadow:0 0 5px currentColor;}
 }
 
 /* LEGENDE */
 .legend span{
-  margin:0 10px;
+  margin:0 8px;
   font-weight:bold;
 }
 
@@ -67,16 +56,15 @@ button{
 .lob{color:#00ff99;}
 .frage{color:#00bfff;}
 .vorschlag{color:#ffaa00;}
-
 </style>
 </head>
 
 <body>
 
-<!-- 🔐 LOGIN -->
-<div id="login" style="text-align:center;margin-top:100px;">
+<!-- LOGIN -->
+<div id="login">
   <img src="logo.png" class="logo">
-  <h2>🔐 Mitglieder Login</h2>
+  <h2>👥 Mitglieder Login</h2>
   <input id="pw" placeholder="Code">
   <button onclick="login()">Login</button>
   <div id="error" style="color:red;"></div>
@@ -93,129 +81,143 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let all = [];
-let currentFilter = "all";
-let currentPassword = "";
+let currentPassword="";
+let all=[];
+let currentFilter="all";
 
 // 🔑 Passwort holen
 db.ref("test/settings/memberPassword").on("value", snap=>{
   currentPassword = snap.val() || "";
 });
 
-// 🔄 Auto Login
-const loginTime = localStorage.getItem("loginTimeTest");
-if(loginTime){
-  start();
-}
-
 // 🔐 LOGIN
 function login(){
-  const pw = document.getElementById("pw").value;
+  const pw=document.getElementById("pw").value;
 
-  if(pw === currentPassword){
-    localStorage.setItem("loginTimeTest", Date.now());
+  if(pw===currentPassword){
+    localStorage.setItem("memberLoginTime", Date.now());
     start();
-  } else {
-    document.getElementById("error").innerText = "Falscher Code";
+  }else{
+    document.getElementById("error").innerText="Falscher Code";
   }
 }
 
-// 🚀 START
+// AUTO LOGIN
+if(localStorage.getItem("memberLoginTime")){
+  start();
+}
+
 function start(){
 
-// 👥 Mitglied registrieren
-const memberId = localStorage.getItem("memberId") || Date.now().toString();
-localStorage.setItem("memberId", memberId);
+  document.getElementById("login").style.display="none";
 
-const ref = db.ref("test/members/" + memberId);
-ref.set(true);
-ref.onDisconnect().remove();
+  // 👥 MEMBER REGISTRIEREN
+  const memberId = localStorage.getItem("memberId") || Date.now().toString();
+  localStorage.setItem("memberId", memberId);
 
-  // 🚫 Kick Listener
+  const ref = db.ref("test/members/"+memberId);
+  ref.set(true);
+  ref.onDisconnect().remove();
+
+  // 🚫 KICK
   db.ref("test/settings/forceLogoutMembers").on("value", snap=>{
     const logoutTime = snap.val();
-    const myLoginTime = localStorage.getItem("loginTimeTest");
+    const myLoginTime = localStorage.getItem("memberLoginTime");
 
-    if (logoutTime && myLoginTime && logoutTime > myLoginTime) {
-      alert("Du wurdest ausgeloggt!");
-      localStorage.removeItem("loginTimeTest");
+    if(logoutTime && myLoginTime && logoutTime > myLoginTime){
+      alert("Du wurdest gekickt!");
+      localStorage.clear();
       location.reload();
     }
   });
 
   document.body.innerHTML = `
-    <img src="logo.png" class="logo">
-    <h2>👥 Mitglieder (Test)</h2>
+  <img src="logo.png" class="logo">
 
-    <div style="text-align:center;">
-      <input id="text" placeholder="Nachricht">
-      <select id="type">
-        <option>Kritik</option>
-        <option>Lob</option>
-        <option>Frage</option>
-        <option>Vorschlag</option>
-      </select>
-      <button onclick="send()">Senden</button>
-    </div>
+  <div class="container">
 
-    <div id="stats"></div>
+  <h2>👥 Mitglieder (Test)</h2>
 
-    <div class="legend">
-      <span class="kritik">■ Kritik</span>
-      <span class="lob">■ Lob</span>
-      <span class="frage">■ Frage</span>
-      <span class="vorschlag">■ Vorschlag</span>
-    </div>
+  <div id="online"></div>
 
-    <div>
-      <button onclick="setFilter('all')">Alle</button>
-      <button onclick="setFilter('Kritik')">Kritik</button>
-      <button onclick="setFilter('Lob')">Lob</button>
-      <button onclick="setFilter('Frage')">Frage</button>
-      <button onclick="setFilter('Vorschlag')">Vorschlag</button>
-    </div>
+  <div>
+    <input id="text" placeholder="Nachricht">
+    <select id="type">
+      <option>Kritik</option>
+      <option>Lob</option>
+      <option>Frage</option>
+      <option>Vorschlag</option>
+    </select>
+    <button onclick="send()">Senden</button>
+  </div>
 
-    <div id="chat"></div>
+  <div id="stats"></div>
+
+  <div class="legend">
+    <span class="kritik">■ Kritik</span>
+    <span class="lob">■ Lob</span>
+    <span class="frage">■ Frage</span>
+    <span class="vorschlag">■ Vorschlag</span>
+  </div>
+
+  <div>
+    <button onclick="setFilter('all')">Alle</button>
+    <button onclick="setFilter('Kritik')">Kritik</button>
+    <button onclick="setFilter('Lob')">Lob</button>
+    <button onclick="setFilter('Frage')">Frage</button>
+    <button onclick="setFilter('Vorschlag')">Vorschlag</button>
+  </div>
+
+  <div id="chat"></div>
+
+  </div>
   `;
 
-  load();
+  loadOnline();
+  loadMessages();
 }
 
-// 🔥 LIVE
-function load(){
-  db.ref("test/feedback").on("child_added", snap=>{
-    const msg = {
-      id: snap.key,
-      ...snap.val(),
-      isNew: true
-    };
+// 👥 ONLINE COUNTER
+function loadOnline(){
+  db.ref("test/admins").on("value", adminSnap=>{
+    db.ref("test/members").on("value", memberSnap=>{
 
+      const admins = adminSnap.numChildren();
+      const members = memberSnap.numChildren();
+
+      document.getElementById("online").innerText =
+        "👑 Vorstand: "+admins+" | 👥 Mitglieder: "+members;
+
+    });
+  });
+}
+
+// 🔥 MESSAGES
+function loadMessages(){
+
+  db.ref("test/feedback").on("child_added", snap=>{
+    const msg={id:snap.key,...snap.val(),isNew:true};
     all.push(msg);
 
-    setTimeout(()=>{
-      msg.isNew = false;
-      render();
-    },10000);
-
+    setTimeout(()=>{msg.isNew=false;render();},15000);
     render();
   });
 
   db.ref("test/feedback").on("child_removed", snap=>{
-  all = all.filter(m => m.id !== snap.key);
-  render();
-});
-  
+    all = all.filter(m => m.id !== snap.key);
+    render();
+  });
 }
 
-// 🎯 FILTER
-function setFilter(filter){
-  currentFilter = filter;
+// FILTER
+function setFilter(f){
+  currentFilter=f;
   render();
 }
 
-// 📊 RENDER
+// RENDER
 function render(){
-  const chat = document.getElementById("chat");
+  const chat=document.getElementById("chat");
   chat.innerHTML="";
 
   let stats={Kritik:0,Lob:0,Frage:0,Vorschlag:0};
@@ -227,18 +229,13 @@ function render(){
   document.getElementById("stats").innerText =
     `Kritik: ${stats.Kritik} | Lob: ${stats.Lob} | Frage: ${stats.Frage} | Vorschlag: ${stats.Vorschlag}`;
 
-  let list = all;
-
-  if(currentFilter!=="all"){
-    list = all.filter(m=>m.type===currentFilter);
-  }
+  let list=currentFilter==="all"?all:all.filter(m=>m.type===currentFilter);
 
   list.slice().reverse().forEach(m=>{
     const div=document.createElement("div");
-    div.className="msg "+m.type+(m.isNew?" new":"");
+    div.className="msg "+m.type+(m.isNew?" blink":"");
 
-    const date = new Date(m.time || Date.now());
-    const time = date.toLocaleString();
+    const time=new Date(m.time||Date.now()).toLocaleString();
 
     div.innerHTML=`
       <b>${m.type}</b><br>
@@ -250,17 +247,17 @@ function render(){
   });
 }
 
-// ✉️ SENDEN
+// SENDEN
 function send(){
-  const text = document.getElementById("text").value;
-  const type = document.getElementById("type").value;
+  const text=document.getElementById("text").value;
+  const type=document.getElementById("type").value;
 
   if(!text) return;
 
   db.ref("test/feedback").push({
     text,
     type,
-    time: Date.now()
+    time:Date.now()
   });
 
   document.getElementById("text").value="";
