@@ -168,10 +168,20 @@ db.ref("test/admins/"+adminId).set(true);
 db.ref("test/admins/"+adminId).onDisconnect().remove();
 
 // 👉 ADMIN KICK LISTENER (JETZT FUNKTIONIERT ES!)
+const adminLoginTime = localStorage.getItem("adminLoginTime");
+
+// 👉 Auto Login setzen wenn nicht vorhanden
+if(!adminLoginTime){
+  localStorage.setItem("adminLoginTime", Date.now());
+}
+
 db.ref("test/settings/forceLogoutAdmins").on("value", snap=>{
-  if(snap.val()){
+  const logoutTime = snap.val();
+  const myLoginTime = localStorage.getItem("adminLoginTime");
+
+  if(logoutTime && myLoginTime && logoutTime > myLoginTime){
     alert("Vorstand wurde gekickt!");
-    localStorage.removeItem("adminId");
+    localStorage.removeItem("adminLoginTime");
     location.reload();
   }
 });
