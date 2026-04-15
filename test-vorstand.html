@@ -22,10 +22,9 @@ button{
   margin:5px;
 }
 
-.red{background:red;color:white;}
 .orange{background:orange;color:black;}
+.red{background:red;color:white;}
 
-/* Nachrichten */
 .msg{
   background:#1e1e1e;
   margin:10px 0;
@@ -49,12 +48,7 @@ button{
   100%{box-shadow:0 0 5px currentColor;}
 }
 
-/* Legende */
-.legend span{
-  margin:0 8px;
-  font-weight:bold;
-}
-
+.legend span{margin:0 8px;font-weight:bold;}
 .kritik{color:#ff4444;}
 .lob{color:#00ff99;}
 .frage{color:#00bfff;}
@@ -74,6 +68,9 @@ button{
 
 <button class="orange" onclick="newPassword()">Neues Mitglieder Passwort</button>
 <div id="pwBox"></div>
+
+<button class="orange" onclick="newArchivePassword()">Archiv Passwort</button>
+<div id="archivePwBox"></div>
 
 <br>
 
@@ -125,11 +122,17 @@ function loadOnline(){
   });
 }
 
-// 🔑 PASSWORT GENERIEREN
+// 🔑 PASSWÖRTER
 function newPassword(){
   const pw = Math.floor(1000 + Math.random()*9000);
   db.ref("test/settings/memberPassword").set(pw);
   document.getElementById("pwBox").innerText="Code: "+pw;
+}
+
+function newArchivePassword(){
+  const pw = Math.floor(1000 + Math.random()*9000);
+  db.ref("test/settings/archivePassword").set(pw);
+  document.getElementById("archivePwBox").innerText="Archiv Code: "+pw;
 }
 
 // 🚫 KICK
@@ -199,7 +202,7 @@ function render(){
   });
 }
 
-// 🧹 LÖSCHEN + ARCHIV
+// 🧹 LÖSCHEN (sauber + Archiv Update)
 function deleteMsg(id){
 
   const pw = prompt("Passwort zum Löschen:");
@@ -209,16 +212,11 @@ function deleteMsg(id){
     return;
   }
 
-  const msg = all.find(m => m.id === id);
-  if(!msg) return;
+  db.ref("test/archive/"+id).update({
+    status: "gelöscht",
+    deletedAt: Date.now()
+  });
 
-  // 👉 ARCHIV (als gelöscht markieren)
-db.ref("test/archive/"+id).update({
-  status: "gelöscht",
-  deletedAt: Date.now()
-});
-
-  // 👉 LIVE löschen
   db.ref("test/feedback/"+id).remove();
 }
 
