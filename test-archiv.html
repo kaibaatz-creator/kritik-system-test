@@ -74,7 +74,6 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let archivePw="";
-let loginTime = 0;
 let all=[];
 
 // 🔑 Passwort laden
@@ -87,18 +86,8 @@ function login(){
   const pw=document.getElementById("pw").value;
 
   if(pw === String(archivePw)){
-    loginTime = Date.now();
+    localStorage.setItem("archiveLoginTime", Date.now());
     start();
-
-  db.ref("test/settings/archiveLogout").on("value", snap=>{
-  const logoutTime = snap.val();
-
-  if(logoutTime && loginTime && logoutTime > loginTime){
-    alert("Archiv Passwort wurde geändert!");
-    location.reload();
-  }
-});
-    
   }else{
     document.getElementById("error").innerText="Falscher Code";
   }
@@ -152,7 +141,6 @@ function loadArchive(){
       render();
     }
   });
-
 }
 
 // 🔍 RENDER + SUCHE + SORTIERUNG
@@ -186,7 +174,7 @@ function render(){
   });
 }
 
-// 🧹 ARCHIV LÖSCHEN
+// 🧹 ARCHIV LÖSCHEN (ohne Logout)
 function clearArchive(){
 
   const pw = prompt("Passwort zum Löschen:");
@@ -197,10 +185,24 @@ function clearArchive(){
   }
 
   db.ref("test/archive").remove();
+
+  all = [];
+  document.getElementById("table").innerHTML = "";
+
   alert("Archiv gelöscht");
-all = [];
-document.getElementById("table").innerHTML = "";;
 }
+
+// 🔥 AUTO LOGOUT BEI PASSWORT ÄNDERUNG
+db.ref("test/settings/archiveLogout").on("value", snap=>{
+  const logoutTime = snap.val();
+  const myLoginTime = localStorage.getItem("archiveLoginTime");
+
+  if(logoutTime && myLoginTime && logoutTime > myLoginTime){
+    alert("Archiv Passwort wurde geändert!");
+    localStorage.removeItem("archiveLoginTime");
+    location.reload();
+  }
+});
 </script>
 
 </body>
