@@ -66,11 +66,19 @@ button{
 
 <div id="online"></div>
 
-<button class="orange" onclick="newPassword()">Neues Mitglieder Passwort</button>
-<div id="pwBox"></div>
+<div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
 
-<button class="orange" onclick="newArchivePassword()">Archiv Passwort</button>
-<div id="archivePwBox"></div>
+  <div>
+    <button class="orange" onclick="newPassword()">Mitglieder Passwort</button>
+    <div id="pwBox"></div>
+  </div>
+
+  <div>
+    <button class="orange" onclick="newArchivePassword()">Archiv Passwort</button>
+    <div id="archivePwBox"></div>
+  </div>
+
+</div>
 
 <br>
 
