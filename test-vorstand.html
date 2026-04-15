@@ -249,8 +249,14 @@ function render(){
 
 // DELETE
 function deleteMsg(id){
-  db.ref("test/feedback/"+id).remove();
-  location.reload();
+  const pw = prompt("Passwort zum Löschen:");
+
+  if(pw === "2"){
+    db.ref("test/feedback/"+id).remove();
+    location.reload();
+  } else {
+    alert("Falsches Passwort");
+  }
 }
 
 // PASSWORD
