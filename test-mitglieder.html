@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mitglieder</title>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -13,53 +12,36 @@ body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
 .logo{height:150px;margin:20px auto;display:block;}
 .container{max-width:700px;margin:auto;padding:10px;}
 
-button{padding:10px;border:none;border-radius:10px;margin:5px;font-weight:bold;}
+.msg{
+  background:#1e1e1e;
+  margin:10px 0;
+  padding:14px;
+  border-radius:14px;
+  text-align:left;
+}
 
-#text{
-  width:90%;
-  min-height:120px;
-  border-radius:10px;
-  padding:10px;
+.msg.Kritik{border-left:4px solid #ff4444;color:#ff4444;}
+.msg.Lob{border-left:4px solid #00ff99;color:#00ff99;}
+.msg.Frage{border-left:4px solid #00bfff;color:#00bfff;}
+.msg.Vorschlag{border-left:4px solid #ffaa00;color:#ffaa00;}
+
+.blink{animation:blink 1s infinite;}
+@keyframes blink{
+  0%{box-shadow:0 0 5px currentColor;}
+  50%{box-shadow:0 0 20px currentColor;}
+  100%{box-shadow:0 0 5px currentColor;}
 }
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
 <div id="login">
   <img src="logo.png" class="logo">
   <h2>👥 Mitglieder Login</h2>
-  <input id="pw">
+  <input id="pw" placeholder="Code">
   <button onclick="login()">Login</button>
   <div id="error" style="color:red;"></div>
-</div>
-
-<!-- APP -->
-<div id="app" style="display:none;">
-
-<img src="logo.png" class="logo">
-
-<div class="container">
-
-<h2>👥 Mitglieder</h2>
-
-<div id="online"></div>
-
-<textarea id="text" placeholder="Nachricht"></textarea><br>
-
-<select id="type">
-  <option>Kritik</option>
-  <option>Lob</option>
-  <option>Frage</option>
-  <option>Vorschlag</option>
-</select>
-
-<button onclick="send()">Senden</button>
-
-<div id="chat"></div>
-
-</div>
 </div>
 
 <script>
@@ -74,58 +56,68 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let currentPassword="";
+let all=[];
 
-// 🔑 PASSWORT LADEN
 db.ref("test/settings/memberPassword").on("value", snap=>{
-  currentPassword = snap.val() || "";
+  currentPassword=snap.val()||"";
 });
 
-// 🔐 LOGIN
 function login(){
-  const pw = document.getElementById("pw").value;
+  const pw=document.getElementById("pw").value;
 
-  if(String(pw) === String(currentPassword)){
-    localStorage.setItem("memberLoginTime", Date.now());
+  if(pw===String(currentPassword)){
+    localStorage.setItem("memberLoginTime",Date.now());
     start();
   }else{
     document.getElementById("error").innerText="Falscher Code";
   }
 }
 
-// 🔄 AUTO LOGIN
-if(localStorage.getItem("memberLoginTime")){
-  start();
-}
+if(localStorage.getItem("memberLoginTime")) start();
 
-// 🚀 START
 function start(){
 
   document.getElementById("login").style.display="none";
-  document.getElementById("app").style.display="block";
 
   const memberId = localStorage.getItem("memberId") || Date.now().toString();
   localStorage.setItem("memberId", memberId);
 
-  db.ref("test/members/"+memberId).set(true);
-  db.ref("test/members/"+memberId).onDisconnect().remove();
+  const ref = db.ref("test/members/"+memberId);
+  ref.set(true);
+  ref.onDisconnect().remove();
 
-  loadOnline();
-  loadMessages();
-
-  // 🚨 FORCE LOGOUT
   db.ref("test/settings/forceLogoutMembers").on("value", snap=>{
-    const logoutTime = snap.val();
-    const loginTime = localStorage.getItem("memberLoginTime");
+    const logoutTime=snap.val();
+    const myTime=localStorage.getItem("memberLoginTime");
 
-    if(logoutTime && loginTime && logoutTime > loginTime){
-      alert("Du wurdest ausgeloggt");
+    if(logoutTime && logoutTime > myTime){
+      alert("Du wurdest gekickt!");
       localStorage.clear();
       location.reload();
     }
   });
+
+  document.body.innerHTML=`
+  <img src="logo.png" class="logo">
+  <h2>👥 Mitglieder (Test)</h2>
+  <div id="online"></div>
+
+  <input id="text" placeholder="Nachricht">
+  <select id="type">
+    <option>Kritik</option>
+    <option>Lob</option>
+    <option>Frage</option>
+    <option>Vorschlag</option>
+  </select>
+  <button onclick="send()">Senden</button>
+
+  <div id="chat"></div>
+  `;
+
+  loadOnline();
+  loadMessages();
 }
 
-// 👥 ONLINE
 function loadOnline(){
   db.ref("test/admins").on("value", a=>{
     db.ref("test/members").on("value", m=>{
@@ -135,20 +127,42 @@ function loadOnline(){
   });
 }
 
-// 📤 SENDEN
+function loadMessages(){
+  db.ref("test/feedback").on("child_added", snap=>{
+    const msg={id:snap.key,...snap.val(),isNew:true};
+    all.push(msg);
+
+    setTimeout(()=>{msg.isNew=false;render();},15000);
+    render();
+  });
+
+  db.ref("test/feedback").on("child_removed", snap=>{
+    all = all.filter(m => m.id !== snap.key);
+    render();
+  });
+}
+
+function render(){
+  const chat=document.getElementById("chat");
+  chat.innerHTML="";
+
+  all.slice().reverse().forEach(m=>{
+    const div=document.createElement("div");
+    div.className="msg "+m.type+(m.isNew?" blink":"");
+
+    div.innerHTML=`<b>${m.type}</b><br>${m.text}`;
+    chat.appendChild(div);
+  });
+}
+
 function send(){
   const text=document.getElementById("text").value;
   const type=document.getElementById("type").value;
-
   if(!text) return;
 
-  const newMsg={
-    text,
-    type,
-    time:Date.now()
-  };
+  const newMsg={text,type,time:Date.now()};
 
-  const ref=db.ref("test/feedback").push(newMsg);
+  const ref = db.ref("test/feedback").push(newMsg);
 
   db.ref("test/archive/"+ref.key).set({
     ...newMsg,
@@ -156,28 +170,6 @@ function send(){
   });
 
   document.getElementById("text").value="";
-}
-
-// 🔥 MESSAGES
-let all=[];
-
-function loadMessages(){
-  db.ref("test/feedback").on("child_added", snap=>{
-    all.push(snap.val());
-    render();
-  });
-}
-
-// RENDER
-function render(){
-  const chat=document.getElementById("chat");
-  chat.innerHTML="";
-
-  all.slice().reverse().forEach(m=>{
-    const div=document.createElement("div");
-    div.innerHTML=`<b>${m.type}</b><br>${m.text}`;
-    chat.appendChild(div);
-  });
 }
 </script>
 
