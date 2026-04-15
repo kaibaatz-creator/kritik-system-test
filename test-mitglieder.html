@@ -199,6 +199,12 @@ function load(){
 
     render();
   });
+
+  db.ref("test/feedback").on("child_removed", snap=>{
+  all = all.filter(m => m.id !== snap.key);
+  render();
+});
+  
 }
 
 // 🎯 FILTER
