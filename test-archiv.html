@@ -73,6 +73,11 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+// 🔑 AUTO LOGIN
+if(localStorage.getItem("archiveLoginTime")){
+  start();
+}
+
 let archivePw="";
 let all=[];
 
