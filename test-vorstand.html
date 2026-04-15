@@ -21,6 +21,13 @@ body { background:#000; color:white; font-family:Arial; }
 
 <h2 style="text-align:center;">👑 Vorstand (Test)</h2>
 
+  <div style="text-align:center;margin:10px;">
+  <button onclick="generatePassword()" style="background:orange;">
+    Neues Mitglieder Passwort
+  </button>
+  <div id="pwBox"></div>
+</div>
+
   <div id="stats" style="text-align:center;margin:10px;"></div>
 
 <div style="text-align:center;">
@@ -111,6 +118,37 @@ function send(){
 
   document.getElementById("text").value="";
 }
+
+function send(){
+  const text = document.getElementById("text").value;
+  const type = document.getElementById("type").value;
+
+  if(!text) return;
+
+  db.ref("test/feedback").push({
+    text,
+    type,
+    time: Date.now()
+  });
+
+  document.getElementById("text").value="";
+}
+
+// 🔥 HIER REIN
+db.ref("test/settings/memberPassword").on("value", snap=>{
+  document.getElementById("pwBox").innerText =
+    "Code: " + (snap.val() || "-");
+});
+
+function generatePassword(){
+  const newPw = Math.floor(1000 + Math.random() * 9000).toString();
+
+  db.ref("test/settings/memberPassword").set(newPw);
+  db.ref("test/settings/forceLogoutMembers").set(Date.now());
+
+  alert("Neuer Code: " + newPw);
+}
+  
 </script>
   
 </body>
