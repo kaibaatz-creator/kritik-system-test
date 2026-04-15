@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Vorstand (Test)</title>
+<title>Mitglieder (Test)</title>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -38,7 +38,7 @@ body {
 .msg.Frage{border-left:4px solid #00bfff;}
 .msg.Vorschlag{border-left:4px solid #ffaa00;}
 
-/* 🔥 Highlight neue Nachricht */
+/* 🔥 Highlight */
 .new{
   animation: glow 10s ease;
 }
@@ -48,7 +48,7 @@ body {
   100%{box-shadow:none;}
 }
 
-/* BUTTONS */
+/* BUTTON */
 button{
   padding:10px;
   margin:5px;
@@ -73,46 +73,14 @@ button{
 
 <body>
 
-<img src="logo.png" class="logo">
-
-<h2>👑 Vorstand (Test)</h2>
-
-<!-- 🔐 Passwort -->
-<div>
-  <button onclick="generatePassword()" style="background:orange;">
-    Neues Mitglieder Passwort
-  </button>
-  <div id="pwBox"></div>
+<!-- 🔐 LOGIN -->
+<div id="login" style="text-align:center;margin-top:100px;">
+  <img src="logo.png" class="logo">
+  <h2>🔐 Mitglieder Login</h2>
+  <input id="pw" placeholder="Code">
+  <button onclick="login()">Login</button>
+  <div id="error" style="color:red;"></div>
 </div>
-
-<!-- 🚫 KICK -->
-<div>
-  <button onclick="kickMembers()" style="background:red;color:white;">
-    Mitglieder kicken
-  </button>
-</div>
-
-<!-- 📊 Stats -->
-<div id="stats"></div>
-
-<!-- 🎨 LEGENDE -->
-<div class="legend">
-  <span class="kritik">■ Kritik</span>
-  <span class="lob">■ Lob</span>
-  <span class="frage">■ Frage</span>
-  <span class="vorschlag">■ Vorschlag</span>
-</div>
-
-<!-- FILTER -->
-<div>
-  <button onclick="setFilter('all')">Alle</button>
-  <button onclick="setFilter('Kritik')">Kritik</button>
-  <button onclick="setFilter('Lob')">Lob</button>
-  <button onclick="setFilter('Frage')">Frage</button>
-  <button onclick="setFilter('Vorschlag')">Vorschlag</button>
-</div>
-
-<div id="chat"></div>
 
 <script>
 const firebaseConfig = {
@@ -127,21 +95,103 @@ const db = firebase.database();
 
 let all = [];
 let currentFilter = "all";
+let currentPassword = "";
+
+// 🔑 Passwort holen
+db.ref("test/settings/memberPassword").on("value", snap=>{
+  currentPassword = snap.val() || "";
+});
+
+// 🔄 Auto Login
+const loginTime = localStorage.getItem("loginTimeTest");
+if(loginTime){
+  start();
+}
+
+// 🔐 LOGIN
+function login(){
+  const pw = document.getElementById("pw").value;
+
+  if(pw === currentPassword){
+    localStorage.setItem("loginTimeTest", Date.now());
+    start();
+  } else {
+    document.getElementById("error").innerText = "Falscher Code";
+  }
+}
+
+// 🚀 START
+function start(){
+
+  // 🚫 Kick Listener
+  db.ref("test/settings/forceLogoutMembers").on("value", snap=>{
+    const logoutTime = snap.val();
+    const myLoginTime = localStorage.getItem("loginTimeTest");
+
+    if (logoutTime && myLoginTime && logoutTime > myLoginTime) {
+      alert("Du wurdest ausgeloggt!");
+      localStorage.removeItem("loginTimeTest");
+      location.reload();
+    }
+  });
+
+  document.body.innerHTML = `
+    <img src="logo.png" class="logo">
+    <h2>👥 Mitglieder (Test)</h2>
+
+    <div style="text-align:center;">
+      <input id="text" placeholder="Nachricht">
+      <select id="type">
+        <option>Kritik</option>
+        <option>Lob</option>
+        <option>Frage</option>
+        <option>Vorschlag</option>
+      </select>
+      <button onclick="send()">Senden</button>
+    </div>
+
+    <div id="stats"></div>
+
+    <div class="legend">
+      <span class="kritik">■ Kritik</span>
+      <span class="lob">■ Lob</span>
+      <span class="frage">■ Frage</span>
+      <span class="vorschlag">■ Vorschlag</span>
+    </div>
+
+    <div>
+      <button onclick="setFilter('all')">Alle</button>
+      <button onclick="setFilter('Kritik')">Kritik</button>
+      <button onclick="setFilter('Lob')">Lob</button>
+      <button onclick="setFilter('Frage')">Frage</button>
+      <button onclick="setFilter('Vorschlag')">Vorschlag</button>
+    </div>
+
+    <div id="chat"></div>
+  `;
+
+  load();
+}
 
 // 🔥 LIVE
-db.ref("test/feedback").on("child_added", snap=>{
-  const msg = {
-    id: snap.key,
-    ...snap.val(),
-    isNew: true
-  };
+function load(){
+  db.ref("test/feedback").on("child_added", snap=>{
+    const msg = {
+      id: snap.key,
+      ...snap.val(),
+      isNew: true
+    };
 
-  all.push(msg);
+    all.push(msg);
 
-  setTimeout(()=>{ msg.isNew = false; render(); },10000);
+    setTimeout(()=>{
+      msg.isNew = false;
+      render();
+    },10000);
 
-  render();
-});
+    render();
+  });
+}
 
 // 🎯 FILTER
 function setFilter(filter){
@@ -179,45 +229,27 @@ function render(){
     div.innerHTML=`
       <b>${m.type}</b><br>
       ${m.text}<br>
-      <span style="font-size:12px;color:#888">${time}</span><br>
-      <button onclick="deleteMsg('${m.id}')" style="background:red;color:white;">
-        Löschen
-      </button>
+      <span style="font-size:12px;color:#888">${time}</span>
     `;
 
     chat.appendChild(div);
   });
 }
 
-// 🧹 DELETE
-function deleteMsg(id){
-  if(confirm("Löschen?")){
-    db.ref("test/feedback/"+id).remove();
-    location.reload();
-  }
-}
+// ✉️ SENDEN
+function send(){
+  const text = document.getElementById("text").value;
+  const type = document.getElementById("type").value;
 
-// 🔑 Passwort anzeigen
-db.ref("test/settings/memberPassword").on("value", snap=>{
-  document.getElementById("pwBox").innerText =
-    "Code: " + (snap.val() || "-");
-});
+  if(!text) return;
 
-// 🔑 neues Passwort
-function generatePassword(){
-  const newPw = Math.floor(1000 + Math.random() * 9000).toString();
+  db.ref("test/feedback").push({
+    text,
+    type,
+    time: Date.now()
+  });
 
-  db.ref("test/settings/memberPassword").set(newPw);
-  db.ref("test/settings/forceLogoutMembers").set(Date.now());
-
-  alert("Neuer Code: " + newPw);
-}
-
-// 🚫 KICK Mitglieder
-function kickMembers(){
-  if(confirm("Alle Mitglieder kicken?")){
-    db.ref("test/settings/forceLogoutMembers").set(Date.now());
-  }
+  document.getElementById("text").value="";
 }
 </script>
 
