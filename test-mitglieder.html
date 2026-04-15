@@ -36,6 +36,12 @@ button{
 .msg.Frage{border-left:4px solid #00bfff;color:#00bfff;}
 .msg.Vorschlag{border-left:4px solid #ffaa00;color:#ffaa00;}
 
+button.like{
+  background:#222;
+  color:white;
+  margin-left:10px;
+}
+
 .blink{
   animation:blink 1s infinite;
 }
@@ -239,14 +245,15 @@ function render(){
 
     const time=new Date(m.time||Date.now()).toLocaleString();
 
-    div.innerHTML=`
-      <b>${m.type}</b><br>
-      ${m.text}<br>
-      <span style="font-size:12px;color:#888">${time}</span>
-    `;
+div.innerHTML = `
+  <b>${m.type}</b><br>
+  ${m.text}<br>
 
-    chat.appendChild(div);
-  });
+  <div style="margin-top:8px;">
+👍 ${m.likes || 0}
+<button class="like" onclick="likeMsg('${m.id}')">👍</button>
+  </div>
+`;
 }
 
 // 📤 SENDEN + ARCHIV
@@ -256,11 +263,12 @@ function send(){
 
   if(!text) return;
 
-  const newMsg = {
-    text,
-    type,
-    time: Date.now()
-  };
+const newMsg = {
+  text,
+  type,
+  time: Date.now(),
+  likes: 0
+};
 
   // LIVE
   const ref = db.ref("test/feedback").push(newMsg);
@@ -273,6 +281,17 @@ db.ref("test/archive/"+ref.key).set({
 
   document.getElementById("text").value="";
 }
+
+function likeMsg(id){
+
+  const ref = db.ref("test/feedback/"+id+"/likes");
+
+  ref.transaction(current => {
+    return (current || 0) + 1;
+  });
+
+}
+  
 </script>
 
 </body>
