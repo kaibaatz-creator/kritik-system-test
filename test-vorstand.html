@@ -63,10 +63,11 @@ button{
 
 <body>
 
+<!-- LOGIN -->
 <div id="login">
   <img src="logo.png" class="logo">
   <h2>👑 Vorstand Login</h2>
-  <input id="pw" placeholder="Code">
+  <input id="pw" placeholder="Passwort">
   <button onclick="login()">Login</button>
   <div id="error" style="color:red;"></div>
 </div>
@@ -82,25 +83,19 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let currentPassword = "";
 let adminId = localStorage.getItem("adminId");
 
-// 🔑 Passwort holen (gleich wie Mitglieder)
-db.ref("test/settings/memberPassword").on("value", snap=>{
-  currentPassword = snap.val() || "";
-});
-
-// 🔐 LOGIN
+// 🔐 LOGIN (Passwort = 1)
 function login(){
   const pw = document.getElementById("pw").value;
 
-  if(pw === currentPassword){
+  if(pw === "1"){
     adminId = Date.now().toString();
     localStorage.setItem("adminId", adminId);
     localStorage.setItem("adminLoginTime", Date.now());
     start();
   } else {
-    document.getElementById("error").innerText="Falscher Code";
+    document.getElementById("error").innerText="Falsches Passwort";
   }
 }
 
@@ -115,11 +110,11 @@ function start(){
 
   adminId = localStorage.getItem("adminId");
 
-  // 👉 als admin registrieren
+  // 👉 Admin registrieren
   db.ref("test/admins/"+adminId).set(true);
   db.ref("test/admins/"+adminId).onDisconnect().remove();
 
-  // 👉 KICK FIX
+  // 👉 Kick Fix
   db.ref("test/settings/forceLogoutAdmins").on("value", snap=>{
     const logoutTime = snap.val();
     const myLoginTime = localStorage.getItem("adminLoginTime");
@@ -133,6 +128,7 @@ function start(){
 
   document.body.innerHTML = `
   <img src="logo.png" class="logo">
+
   <div class="container">
 
   <h2>👑 Vorstand (Test)</h2>
@@ -141,7 +137,7 @@ function start(){
 
   <div class="btn-group">
     <button onclick="generatePassword()" style="background:orange;">
-      Neues Passwort
+      Neues Mitglieder Passwort
     </button>
   </div>
 
@@ -151,6 +147,7 @@ function start(){
     <button onclick="kickMembers()" style="background:red;color:white;">
       Mitglieder kicken
     </button>
+
     <button onclick="kickAdmins()" style="background:darkred;color:white;">
       Vorstand kicken
     </button>
@@ -174,6 +171,7 @@ function start(){
   </div>
 
   <div id="chat"></div>
+
   </div>
   `;
 
@@ -181,12 +179,14 @@ function start(){
   loadMessages();
 }
 
-// 👥 ONLINE COUNTER
+// 👥 ONLINE
 function loadOnline(){
   db.ref("test/admins").on("value", snap=>{
     const admins = snap.numChildren();
+
     db.ref("test/members").once("value", m=>{
       const members = m.numChildren();
+
       document.getElementById("online").innerText =
         "👑 Vorstand: "+admins+" | 👥 Mitglieder: "+members;
     });
@@ -203,11 +203,15 @@ function loadMessages(){
     all.push(msg);
 
     setTimeout(()=>{msg.isNew=false;render();},15000);
+
     render();
   });
 }
 
-function setFilter(f){currentFilter=f;render();}
+function setFilter(f){
+  currentFilter=f;
+  render();
+}
 
 function render(){
   const chat=document.getElementById("chat");
@@ -228,9 +232,12 @@ function render(){
     const div=document.createElement("div");
     div.className="msg "+m.type+(m.isNew?" blink":"");
 
+    const time=new Date(m.time||Date.now()).toLocaleString();
+
     div.innerHTML=`
       <b>${m.type}</b><br>
       ${m.text}<br>
+      <span style="font-size:12px;color:#888">${time}</span><br>
       <button onclick="deleteMsg('${m.id}')" style="background:red;color:white;">
         Löschen
       </button>
