@@ -10,7 +10,10 @@
 
 <style>
 body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
+
 .logo{height:150px;margin:20px auto;display:block;}
+
+.container{max-width:700px;margin:auto;padding:10px;}
 
 button{
   padding:10px;
@@ -26,7 +29,7 @@ button{
 
 .msg{
   background:#1e1e1e;
-  margin:10px;
+  margin:10px 0;
   padding:14px;
   border-radius:14px;
   text-align:left;
@@ -59,11 +62,15 @@ button{
 
 <img src="logo.png" class="logo">
 
+<div class="container">
+
 <h2>👑 Vorstand (Test)</h2>
 
 <div id="online"></div>
 
-<div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
+<!-- 🔑 PASSWÖRTER NEBENEINANDER -->
+<div style="display:flex;justify-content:center;gap:15px;flex-wrap:wrap;margin-top:10px;">
+
   <div>
     <button class="orange" onclick="newPassword()">Mitglieder Passwort</button>
     <div id="pwBox"></div>
@@ -73,6 +80,7 @@ button{
     <button class="orange" onclick="newArchivePassword()">Archiv Passwort</button>
     <div id="archivePwBox"></div>
   </div>
+
 </div>
 
 <br>
@@ -98,6 +106,8 @@ button{
 </div>
 
 <div id="chat"></div>
+
+</div>
 
 <script>
 const firebaseConfig = {
@@ -132,8 +142,12 @@ function newPassword(){
 
 function newArchivePassword(){
   const pw = Math.floor(1000 + Math.random()*9000);
+
   db.ref("test/settings/archivePassword").set(pw);
+
+  // 🔥 wichtig für Logout
   db.ref("test/settings/archiveLogout").set(Date.now());
+
   document.getElementById("archivePwBox").innerText="Archiv Code: "+pw;
 }
 
@@ -147,12 +161,6 @@ function kickAdmins(){
   db.ref("test/settings/forceLogoutAdmins").set(Date.now());
   db.ref("test/admins").remove();
 }
-
-// 👉 WICHTIG: AUTO KICK FIX
-db.ref("test/settings/forceLogoutAdmins").on("value", snap=>{
-  alert("Vorstand wurde gekickt!");
-  location.reload();
-});
 
 // 🔥 MESSAGES
 function loadMessages(){
@@ -210,7 +218,7 @@ function render(){
   });
 }
 
-// 🧹 LÖSCHEN
+// 🧹 LÖSCHEN + ARCHIV UPDATE
 function deleteMsg(id){
 
   const pw = prompt("Passwort zum Löschen:");
@@ -228,7 +236,7 @@ function deleteMsg(id){
   db.ref("test/feedback/"+id).remove();
 }
 
-// START (wie früher – ohne Login Chaos)
+// START
 const adminId = localStorage.getItem("adminId") || Date.now().toString();
 localStorage.setItem("adminId", adminId);
 
