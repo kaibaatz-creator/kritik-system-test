@@ -123,6 +123,14 @@ function login(){
 // 🚀 START
 function start(){
 
+// 👥 Mitglied registrieren
+const memberId = localStorage.getItem("memberId") || Date.now().toString();
+localStorage.setItem("memberId", memberId);
+
+const ref = db.ref("test/members/" + memberId);
+ref.set(true);
+ref.onDisconnect().remove();
+
   // 🚫 Kick Listener
   db.ref("test/settings/forceLogoutMembers").on("value", snap=>{
     const logoutTime = snap.val();
