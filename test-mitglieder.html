@@ -10,7 +10,9 @@
 
 <style>
 body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
+
 .logo{height:150px;margin:20px auto;display:block;}
+
 .container{max-width:700px;margin:auto;padding:10px;}
 
 button{
@@ -22,7 +24,6 @@ button{
   margin:5px;
 }
 
-/* Nachrichten */
 .msg{
   background:#1e1e1e;
   margin:10px 0;
@@ -36,116 +37,41 @@ button{
 .msg.Frage{border-left:4px solid #00bfff;color:#00bfff;}
 .msg.Vorschlag{border-left:4px solid #ffaa00;color:#ffaa00;}
 
-button.like{
-  background:#222;
-  color:white;
-  margin-left:10px;
-}
-
-.blink{
-  animation:blink 1s infinite;
-}
-
-@keyframes blink{
-  0%{box-shadow:0 0 5px currentColor;}
-  50%{box-shadow:0 0 20px currentColor;}
-  100%{box-shadow:0 0 5px currentColor;}
-}
-
-/* Legende */
-.legend span{
-  margin:0 8px;
-  font-weight:bold;
-}
-
-#text{
-  width: 90%;
-  height: 120px;
-  border-radius: 10px;
-  padding: 10px;
-  font-size: 14px;
-}
-  
+.legend span{margin:0 8px;font-weight:bold;}
 .kritik{color:#ff4444;}
 .lob{color:#00ff99;}
 .frage{color:#00bfff;}
 .vorschlag{color:#ffaa00;}
+
+#text{
+  width:90%;
+  min-height:120px;
+  border-radius:10px;
+  padding:10px;
+  font-size:14px;
+  resize:none;
+}
 </style>
 </head>
 
 <body>
 
+<!-- 🔐 LOGIN -->
 <div id="login">
+
   <img src="logo.png" class="logo">
   <h2>👥 Mitglieder Login</h2>
+
   <input id="pw" placeholder="Code">
   <button onclick="login()">Login</button>
+
   <div id="error" style="color:red;"></div>
+
 </div>
 
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyCFjuJ-XSN0YnvAilerXPkXbw2iR2ixBv8",
-  authDomain: "kritik-system.firebaseapp.com",
-  databaseURL: "https://kritik-system-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "kritik-system"
-};
+<!-- ✅ APP -->
+<div id="app" style="display:none;">
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-let all=[];
-let currentFilter="all";
-let currentPassword="";
-
-// 🔑 Passwort holen
-db.ref("test/settings/memberPassword").on("value", snap=>{
-  currentPassword = snap.val() || "";
-});
-
-// LOGIN
-function login(){
-  const pw=document.getElementById("pw").value;
-
- if(String(pw) === String(currentPassword)){
-    if(localStorage.getItem("memberLoginTime") && currentPassword){
-  start();
-}
-  }else{
-    document.getElementById("error").innerText="Falscher Code";
-  }
-}
-
-// AUTO LOGIN
-if(localStorage.getItem("memberLoginTime")){
-  start();
-}
-
-function start(){
-
-  document.getElementById("login").style.display="none";
-
-  // 👥 MEMBER REGISTRIEREN
-  const memberId = localStorage.getItem("memberId") || Date.now().toString();
-  localStorage.setItem("memberId", memberId);
-
-  const ref = db.ref("test/members/"+memberId);
-  ref.set(true);
-  ref.onDisconnect().remove();
-
-  // 🚫 KICK
-  db.ref("test/settings/forceLogoutMembers").on("value", snap=>{
-    const logoutTime = snap.val();
-    const myLoginTime = localStorage.getItem("memberLoginTime");
-
-    if(logoutTime && myLoginTime && logoutTime > myLoginTime){
-      alert("Du wurdest gekickt!");
-      localStorage.clear();
-      location.reload();
-    }
-  });
-
-  document.body.innerHTML = `
   <img src="logo.png" class="logo">
 
   <div class="container">
@@ -154,16 +80,18 @@ function start(){
 
   <div id="online"></div>
 
-  <div>
-    <textarea id="text" placeholder="Nachricht"></textarea>
-    <select id="type">
-      <option>Kritik</option>
-      <option>Lob</option>
-      <option>Frage</option>
-      <option>Vorschlag</option>
-    </select>
-    <button onclick="send()">Senden</button>
-  </div>
+  <!-- Eingabe -->
+  <textarea id="text" placeholder="Nachricht"></textarea>
+  <br>
+
+  <select id="type">
+    <option>Kritik</option>
+    <option>Lob</option>
+    <option>Frage</option>
+    <option>Vorschlag</option>
+  </select>
+
+  <button onclick="send()">Senden</button>
 
   <div id="stats"></div>
 
@@ -185,7 +113,56 @@ function start(){
   <div id="chat"></div>
 
   </div>
-  `;
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCFjuJ-XSN0YnvAilerXPkXbw2iR2ixBv8",
+  authDomain: "kritik-system.firebaseapp.com",
+  databaseURL: "https://kritik-system-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "kritik-system"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let currentPassword="";
+let all=[];
+let currentFilter="all";
+
+// 🔑 PASSWORT LADEN
+db.ref("test/settings/memberPassword").on("value", snap=>{
+  currentPassword = snap.val() || "";
+});
+
+// 🔐 LOGIN
+function login(){
+  const pw = document.getElementById("pw").value;
+
+  if(String(pw) === String(currentPassword)){
+    localStorage.setItem("memberLoginTime", Date.now());
+    start();
+  }else{
+    document.getElementById("error").innerText="Falscher Code";
+  }
+}
+
+// 🔄 AUTO LOGIN
+if(localStorage.getItem("memberLoginTime")){
+  start();
+}
+
+// 🚀 START
+function start(){
+
+  document.getElementById("login").style.display="none";
+  document.getElementById("app").style.display="block";
+
+  const memberId = localStorage.getItem("memberId") || Date.now().toString();
+  localStorage.setItem("memberId", memberId);
+
+  db.ref("test/members/"+memberId).set(true);
+  db.ref("test/members/"+memberId).onDisconnect().remove();
 
   loadOnline();
   loadMessages();
@@ -201,14 +178,35 @@ function loadOnline(){
   });
 }
 
+// 📤 SENDEN + ARCHIV
+function send(){
+  const text=document.getElementById("text").value;
+  const type=document.getElementById("type").value;
+
+  if(!text) return;
+
+  const newMsg = {
+    text,
+    type,
+    time: Date.now()
+  };
+
+  const ref = db.ref("test/feedback").push(newMsg);
+
+  db.ref("test/archive/"+ref.key).set({
+    ...newMsg,
+    status:"aktiv"
+  });
+
+  document.getElementById("text").value="";
+}
+
 // 🔥 MESSAGES
 function loadMessages(){
 
   db.ref("test/feedback").on("child_added", snap=>{
-    const msg={id:snap.key,...snap.val(),isNew:true};
+    const msg={id:snap.key,...snap.val()};
     all.push(msg);
-
-    setTimeout(()=>{msg.isNew=false;render();},15000);
     render();
   });
 
@@ -242,57 +240,19 @@ function render(){
 
   list.slice().reverse().forEach(m=>{
     const div=document.createElement("div");
-    div.className="msg "+m.type+(m.isNew?" blink":"");
+    div.className="msg "+m.type;
 
-    const time=new Date(m.time||Date.now()).toLocaleString();
+    const time=new Date(m.time).toLocaleString();
 
-div.innerHTML = `
-  <b>${m.type}</b><br>
-  ${m.text}<br>
+    div.innerHTML=`
+      <b>${m.type}</b><br>
+      ${m.text}<br>
+      <span style="font-size:12px;color:#888">${time}</span>
+    `;
 
-  <div style="margin-top:8px;">
-👍 ${m.likes || 0}
-<button class="like" onclick="likeMsg('${m.id}')">👍</button>
-  </div>
-`;
-}
-
-// 📤 SENDEN + ARCHIV
-function send(){
-  const text=document.getElementById("text").value;
-  const type=document.getElementById("type").value;
-
-  if(!text) return;
-
-const newMsg = {
-  text,
-  type,
-  time: Date.now(),
-  likes: 0
-};
-
-  // LIVE
-  const ref = db.ref("test/feedback").push(newMsg);
-
-// 👉 MIT ID speichern
-db.ref("test/archive/"+ref.key).set({
-  ...newMsg,
-  status: "aktiv"
-});
-
-  document.getElementById("text").value="";
-}
-
-function likeMsg(id){
-
-  const ref = db.ref("test/feedback/"+id+"/likes");
-
-  ref.transaction(current => {
-    return (current || 0) + 1;
+    chat.appendChild(div);
   });
-
 }
-  
 </script>
 
 </body>
