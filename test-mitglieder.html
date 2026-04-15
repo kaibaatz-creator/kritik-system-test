@@ -31,7 +31,17 @@ body { background:#000; color:white; font-family:Arial; }
   </select>
   <button onclick="send()">Senden</button>
 </div>
+  
+<div id="stats" style="text-align:center;margin:10px;"></div>
 
+<div style="text-align:center;">
+  <button onclick="setFilter('all')">Alle</button>
+  <button onclick="setFilter('Kritik')">Kritik</button>
+  <button onclick="setFilter('Lob')">Lob</button>
+  <button onclick="setFilter('Frage')">Frage</button>
+  <button onclick="setFilter('Vorschlag')">Vorschlag</button>
+</div>
+  
 <div id="chat"></div>
 
 <script>
@@ -46,15 +56,61 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let all = [];
+let currentFilter = "all";
 
+// 🔥 LIVE
 db.ref("test/feedback").on("child_added", snap=>{
   all.push(snap.val());
   render();
 });
 
+// FILTER setzen
+function setFilter(filter){
+  currentFilter = filter;
+  render();
+}
+
+// RENDER
+function render(){
+  const chat = document.getElementById("chat");
+  chat.innerHTML="";
+
+  let stats = {Kritik:0,Lob:0,Frage:0,Vorschlag:0};
+
+  all.forEach(m=>{
+    if(stats[m.type] != undefined){
+      stats[m.type]++;
+    }
+  });
+
+  // 👉 Stats anzeigen (falls vorhanden)
+  if(document.getElementById("stats")){
+    document.getElementById("stats").innerHTML = `
+      Kritik: ${stats.Kritik} |
+      Lob: ${stats.Lob} |
+      Frage: ${stats.Frage} |
+      Vorschlag: ${stats.Vorschlag}
+    `;
+  }
+
+  let list = all;
+
+  if(currentFilter !== "all"){
+    list = all.filter(m=>m.type === currentFilter);
+  }
+
+  list.slice().reverse().forEach(m=>{
+    const div=document.createElement("div");
+    div.className="msg "+m.type;
+    div.innerHTML=`<b>${m.type}</b><br>${m.text}`;
+    chat.appendChild(div);
+  });
+}
+
+// SENDEN (nur Mitglieder-Seite nutzen!)
 function send(){
-  const text = document.getElementById("text").value;
-  const type = document.getElementById("type").value;
+  const text = document.getElementById("text")?.value;
+  const type = document.getElementById("type")?.value;
 
   if(!text) return;
 
@@ -65,18 +121,6 @@ function send(){
   });
 
   document.getElementById("text").value="";
-}
-
-function render(){
-  const chat = document.getElementById("chat");
-  chat.innerHTML="";
-
-  all.slice().reverse().forEach(m=>{
-    const div=document.createElement("div");
-    div.className="msg "+m.type;
-    div.innerHTML=`<b>${m.type}</b><br>${m.text}`;
-    chat.appendChild(div);
-  });
 }
 </script>
 
