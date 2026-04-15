@@ -107,9 +107,10 @@ db.ref("test/settings/memberPassword").on("value", snap=>{
 function login(){
   const pw=document.getElementById("pw").value;
 
-  if(pw === String(currentPassword)){
-    localStorage.setItem("memberLoginTime", Date.now());
-    start();
+ if(String(pw) === String(currentPassword)){
+    if(localStorage.getItem("memberLoginTime") && currentPassword){
+  start();
+}
   }else{
     document.getElementById("error").innerText="Falscher Code";
   }
