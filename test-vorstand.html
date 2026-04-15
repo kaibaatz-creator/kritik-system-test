@@ -14,25 +14,18 @@ body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
 .container{max-width:700px;margin:auto;padding:10px;}
 
 button{
-  padding:12px;
-  border-radius:10px;
+  padding:10px;
   border:none;
+  border-radius:10px;
   cursor:pointer;
   font-weight:bold;
+  margin:5px;
 }
 
-.btn-group{
-  display:flex;
-  flex-wrap:wrap;
-  justify-content:center;
-  gap:10px;
-}
+.red{background:red;color:white;}
+.orange{background:orange;color:black;}
 
-@media(max-width:600px){
-  .btn-group{flex-direction:column;}
-  button{width:100%;}
-}
-
+/* Nachrichten */
 .msg{
   background:#1e1e1e;
   margin:10px 0;
@@ -46,14 +39,22 @@ button{
 .msg.Frage{border-left:4px solid #00bfff;color:#00bfff;}
 .msg.Vorschlag{border-left:4px solid #ffaa00;color:#ffaa00;}
 
-.blink{animation:blink 1s infinite;}
+.blink{
+  animation:blink 1s infinite;
+}
+
 @keyframes blink{
   0%{box-shadow:0 0 5px currentColor;}
   50%{box-shadow:0 0 20px currentColor;}
   100%{box-shadow:0 0 5px currentColor;}
 }
 
-.legend span{margin:0 8px;font-weight:bold;}
+/* Legende */
+.legend span{
+  margin:0 8px;
+  font-weight:bold;
+}
+
 .kritik{color:#ff4444;}
 .lob{color:#00ff99;}
 .frage{color:#00bfff;}
@@ -63,13 +64,41 @@ button{
 
 <body>
 
-<!-- LOGIN -->
-<div id="login">
-  <img src="logo.png" class="logo">
-  <h2>👑 Vorstand Login</h2>
-  <input id="pw" placeholder="Passwort">
-  <button onclick="login()">Login</button>
-  <div id="error" style="color:red;"></div>
+<img src="logo.png" class="logo">
+
+<div class="container">
+
+<h2>👑 Vorstand (Test)</h2>
+
+<div id="online"></div>
+
+<button class="orange" onclick="newPassword()">Neues Mitglieder Passwort</button>
+<div id="pwBox"></div>
+
+<br>
+
+<button class="red" onclick="kickMembers()">Mitglieder kicken</button>
+<button class="red" onclick="kickAdmins()">Vorstand kicken</button>
+
+<div id="stats"></div>
+
+<div class="legend">
+  <span class="kritik">■ Kritik</span>
+  <span class="lob">■ Lob</span>
+  <span class="frage">■ Frage</span>
+  <span class="vorschlag">■ Vorschlag</span>
+</div>
+
+<div>
+  <button onclick="setFilter('all')">Alle</button>
+  <button onclick="setFilter('Kritik')">Kritik</button>
+  <button onclick="setFilter('Lob')">Lob</button>
+  <button onclick="setFilter('Frage')">Frage</button>
+  <button onclick="setFilter('Vorschlag')">Vorschlag</button>
+</div>
+
+<div id="chat"></div>
+
 </div>
 
 <script>
@@ -83,144 +112,61 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let adminId = localStorage.getItem("adminId");
-
-// 🔐 LOGIN (Passwort = 1)
-function login(){
-  const pw = document.getElementById("pw").value;
-
-  if(pw === "1"){
-    adminId = Date.now().toString();
-    localStorage.setItem("adminId", adminId);
-    localStorage.setItem("adminLoginTime", Date.now());
-    start();
-  } else {
-    document.getElementById("error").innerText="Falsches Passwort";
-  }
-}
-
-// 🔄 AUTO LOGIN
-if(localStorage.getItem("adminId")){
-  start();
-}
-
-function start(){
-
-  document.getElementById("login").style.display="none";
-
-  adminId = localStorage.getItem("adminId");
-
-  // 👉 Admin registrieren
-  db.ref("test/admins/"+adminId).set(true);
-  db.ref("test/admins/"+adminId).onDisconnect().remove();
-
-  // 👉 Kick Fix
-  db.ref("test/settings/forceLogoutAdmins").on("value", snap=>{
-    const logoutTime = snap.val();
-    const myLoginTime = localStorage.getItem("adminLoginTime");
-
-    if(logoutTime && myLoginTime && logoutTime > myLoginTime){
-      alert("Du wurdest gekickt!");
-      localStorage.clear();
-      location.reload();
-    }
-  });
-
-  document.body.innerHTML = `
-  <img src="logo.png" class="logo">
-
-  <div class="container">
-
-  <h2>👑 Vorstand (Test)</h2>
-
-  <div id="online"></div>
-
-  <div class="btn-group">
-    <button onclick="generatePassword()" style="background:orange;">
-      Neues Mitglieder Passwort
-    </button>
-  </div>
-
-  <div id="pwBox"></div>
-
-  <div class="btn-group">
-    <button onclick="kickMembers()" style="background:red;color:white;">
-      Mitglieder kicken
-    </button>
-
-    <button onclick="kickAdmins()" style="background:darkred;color:white;">
-      Vorstand kicken
-    </button>
-  </div>
-
-  <div id="stats"></div>
-
-  <div class="legend">
-    <span class="kritik">■ Kritik</span>
-    <span class="lob">■ Lob</span>
-    <span class="frage">■ Frage</span>
-    <span class="vorschlag">■ Vorschlag</span>
-  </div>
-
-  <div class="btn-group">
-    <button onclick="setFilter('all')">Alle</button>
-    <button onclick="setFilter('Kritik')">Kritik</button>
-    <button onclick="setFilter('Lob')">Lob</button>
-    <button onclick="setFilter('Frage')">Frage</button>
-    <button onclick="setFilter('Vorschlag')">Vorschlag</button>
-  </div>
-
-  <div id="chat"></div>
-
-  </div>
-  `;
-
-  loadOnline();
-  loadMessages();
-}
-
-// 👥 ONLINE
-function loadOnline(){
-  
-db.ref("test/admins").on("value", adminSnap=>{
-  db.ref("test/members").on("value", memberSnap=>{
-
-    const admins = adminSnap.numChildren();
-    const members = memberSnap.numChildren();
-
-    document.getElementById("online").innerText =
-      "👑 Vorstand: "+admins+" | 👥 Mitglieder: "+members;
-
-  });
-});
-  
-}
-
-// 🔥 MESSAGES
 let all=[];
 let currentFilter="all";
 
+// 👥 ONLINE
+function loadOnline(){
+  db.ref("test/admins").on("value", a=>{
+    db.ref("test/members").on("value", m=>{
+      document.getElementById("online").innerText =
+        "👑 Vorstand: "+a.numChildren()+" | 👥 Mitglieder: "+m.numChildren();
+    });
+  });
+}
+
+// 🔑 PASSWORT GENERIEREN
+function newPassword(){
+  const pw = Math.floor(1000 + Math.random()*9000);
+  db.ref("test/settings/memberPassword").set(pw);
+  document.getElementById("pwBox").innerText="Code: "+pw;
+}
+
+// 🚫 KICK
+function kickMembers(){
+  db.ref("test/settings/forceLogoutMembers").set(Date.now());
+  db.ref("test/members").remove();
+}
+
+function kickAdmins(){
+  db.ref("test/settings/forceLogoutAdmins").set(Date.now());
+  db.ref("test/admins").remove();
+}
+
+// 🔥 MESSAGES
 function loadMessages(){
+
   db.ref("test/feedback").on("child_added", snap=>{
     const msg={id:snap.key,...snap.val(),isNew:true};
     all.push(msg);
 
     setTimeout(()=>{msg.isNew=false;render();},15000);
-
     render();
   });
-  
+
   db.ref("test/feedback").on("child_removed", snap=>{
-  all = all.filter(m => m.id !== snap.key);
-  render();
-});
+    all = all.filter(m => m.id !== snap.key);
+    render();
+  });
 }
 
+// FILTER
 function setFilter(f){
   currentFilter=f;
   render();
 }
 
+// RENDER
 function render(){
   const chat=document.getElementById("chat");
   chat.innerHTML="";
@@ -246,47 +192,48 @@ function render(){
       <b>${m.type}</b><br>
       ${m.text}<br>
       <span style="font-size:12px;color:#888">${time}</span><br>
-      <button onclick="deleteMsg('${m.id}')" style="background:red;color:white;">
-        Löschen
-      </button>
+      <button class="red" onclick="deleteMsg('${m.id}')">Löschen</button>
     `;
 
     chat.appendChild(div);
   });
 }
 
-// DELETE
+// 🧹 LÖSCHEN + ARCHIV
 function deleteMsg(id){
+
   const pw = prompt("Passwort zum Löschen:");
 
-  if(pw === "2"){
-    db.ref("test/feedback/"+id).remove();
-    location.reload();
-  } else {
+  if(pw !== "2"){
     alert("Falsches Passwort");
+    return;
   }
+
+  const msg = all.find(m => m.id === id);
+  if(!msg) return;
+
+  // 👉 ARCHIV (als gelöscht markieren)
+  db.ref("test/archive").push({
+    text: msg.text,
+    type: msg.type,
+    time: msg.time,
+    status: "gelöscht",
+    deletedAt: Date.now()
+  });
+
+  // 👉 LIVE löschen
+  db.ref("test/feedback/"+id).remove();
 }
 
-// PASSWORD
-db.ref("test/settings/memberPassword").on("value", snap=>{
-  const el=document.getElementById("pwBox");
-  if(el) el.innerText="Code: "+(snap.val()||"-");
-});
+// START
+const adminId = localStorage.getItem("adminId") || Date.now().toString();
+localStorage.setItem("adminId", adminId);
 
-function generatePassword(){
-  const newPw=Math.floor(1000+Math.random()*9000).toString();
-  db.ref("test/settings/memberPassword").set(newPw);
-  db.ref("test/settings/forceLogoutMembers").set(Date.now());
-}
+db.ref("test/admins/"+adminId).set(true);
+db.ref("test/admins/"+adminId).onDisconnect().remove();
 
-// KICK
-function kickMembers(){
-  db.ref("test/settings/forceLogoutMembers").set(Date.now());
-}
-
-function kickAdmins(){
-  db.ref("test/settings/forceLogoutAdmins").set(Date.now());
-}
+loadOnline();
+loadMessages();
 </script>
 
 </body>
