@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Mitglieder (Test)</title>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<style>
+body { background:#000; color:white; font-family:Arial; }
+.msg{background:#1e1e1e;margin:10px;padding:14px;border-radius:14px;}
+.msg.Kritik{border-left:4px solid #ff4444;}
+.msg.Lob{border-left:4px solid #00ff99;}
+.msg.Frage{border-left:4px solid #00bfff;}
+.msg.Vorschlag{border-left:4px solid #ffaa00;}
+</style>
+</head>
+
+<body>
+
+<h2 style="text-align:center;">👥 Mitglieder (Test)</h2>
+
+<div style="text-align:center;">
+  <input id="text" placeholder="Nachricht">
+  <select id="type">
+    <option>Kritik</option>
+    <option>Lob</option>
+    <option>Frage</option>
+    <option>Vorschlag</option>
+  </select>
+  <button onclick="send()">Senden</button>
+</div>
+
+<div id="chat"></div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCFjuJ-XSN0YnvAilerXPkXbw2iR2ixBv8",
+  authDomain: "kritik-system.firebaseapp.com",
+  databaseURL: "https://kritik-system-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "kritik-system"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let all = [];
+
+db.ref("test/feedback").on("child_added", snap=>{
+  all.push(snap.val());
+  render();
+});
+
+function send(){
+  const text = document.getElementById("text").value;
+  const type = document.getElementById("type").value;
+
+  if(!text) return;
+
+  db.ref("test/feedback").push({
+    text,
+    type,
+    time: Date.now()
+  });
+
+  document.getElementById("text").value="";
+}
+
+function render(){
+  const chat = document.getElementById("chat");
+  chat.innerHTML="";
+
+  all.slice().reverse().forEach(m=>{
+    const div=document.createElement("div");
+    div.className="msg "+m.type;
+    div.innerHTML=`<b>${m.type}</b><br>${m.text}`;
+    chat.appendChild(div);
+  });
+}
+</script>
+
+</body>
+</html>
