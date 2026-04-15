@@ -8,36 +8,110 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <style>
-body { background:#000; color:white; font-family:Arial; }
-.msg{background:#1e1e1e;margin:10px;padding:14px;border-radius:14px;}
+body {
+  background:#000;
+  color:white;
+  font-family:Arial;
+  text-align:center;
+}
+
+/* LOGO */
+.logo{
+  height:150px;
+  margin:20px auto;
+  display:block;
+}
+
+/* MESSAGES */
+.msg{
+  background:#1e1e1e;
+  margin:10px auto;
+  padding:14px;
+  border-radius:14px;
+  max-width:700px;
+  text-align:left;
+  transition:0.3s;
+}
+
 .msg.Kritik{border-left:4px solid #ff4444;}
 .msg.Lob{border-left:4px solid #00ff99;}
 .msg.Frage{border-left:4px solid #00bfff;}
 .msg.Vorschlag{border-left:4px solid #ffaa00;}
+
+/* 🔥 Highlight neue Nachricht */
+.new{
+  animation: glow 10s ease;
+}
+
+@keyframes glow{
+  0%{box-shadow:0 0 15px currentColor;}
+  100%{box-shadow:none;}
+}
+
+/* BUTTONS */
+button{
+  padding:10px;
+  margin:5px;
+  border-radius:10px;
+  border:none;
+  cursor:pointer;
+}
+
+/* LEGENDE */
+.legend span{
+  margin:0 10px;
+  font-weight:bold;
+}
+
+.kritik{color:#ff4444;}
+.lob{color:#00ff99;}
+.frage{color:#00bfff;}
+.vorschlag{color:#ffaa00;}
+
 </style>
 </head>
 
 <body>
 
-<h2 style="text-align:center;">👑 Vorstand (Test)</h2>
+<img src="logo.png" class="logo">
 
-  <div style="text-align:center;margin:10px;">
+<h2>👑 Vorstand (Test)</h2>
+
+<!-- 🔐 Passwort -->
+<div>
   <button onclick="generatePassword()" style="background:orange;">
     Neues Mitglieder Passwort
   </button>
   <div id="pwBox"></div>
 </div>
 
-  <div id="stats" style="text-align:center;margin:10px;"></div>
+<!-- 🚫 KICK -->
+<div>
+  <button onclick="kickMembers()" style="background:red;color:white;">
+    Mitglieder kicken
+  </button>
+</div>
 
-<div style="text-align:center;">
+<!-- 📊 Stats -->
+<div id="stats"></div>
+
+<!-- 🎨 LEGENDE -->
+<div class="legend">
+  <span class="kritik">■ Kritik</span>
+  <span class="lob">■ Lob</span>
+  <span class="frage">■ Frage</span>
+  <span class="vorschlag">■ Vorschlag</span>
+</div>
+
+<!-- FILTER -->
+<div>
   <button onclick="setFilter('all')">Alle</button>
   <button onclick="setFilter('Kritik')">Kritik</button>
   <button onclick="setFilter('Lob')">Lob</button>
   <button onclick="setFilter('Frage')">Frage</button>
   <button onclick="setFilter('Vorschlag')">Vorschlag</button>
 </div>
-  
+
 <div id="chat"></div>
 
 <script>
@@ -56,90 +130,80 @@ let currentFilter = "all";
 
 // 🔥 LIVE
 db.ref("test/feedback").on("child_added", snap=>{
-  all.push(snap.val());
+  const msg = {
+    id: snap.key,
+    ...snap.val(),
+    isNew: true
+  };
+
+  all.push(msg);
+
+  setTimeout(()=>{ msg.isNew = false; render(); },10000);
+
   render();
 });
 
-// FILTER setzen
+// 🎯 FILTER
 function setFilter(filter){
   currentFilter = filter;
   render();
 }
 
-// RENDER
+// 📊 RENDER
 function render(){
   const chat = document.getElementById("chat");
   chat.innerHTML="";
 
-  let stats = {Kritik:0,Lob:0,Frage:0,Vorschlag:0};
+  let stats={Kritik:0,Lob:0,Frage:0,Vorschlag:0};
 
   all.forEach(m=>{
-    if(stats[m.type] != undefined){
-      stats[m.type]++;
-    }
+    if(stats[m.type]!=undefined) stats[m.type]++;
   });
 
-  // 👉 Stats anzeigen (falls vorhanden)
-  if(document.getElementById("stats")){
-    document.getElementById("stats").innerHTML = `
-      Kritik: ${stats.Kritik} |
-      Lob: ${stats.Lob} |
-      Frage: ${stats.Frage} |
-      Vorschlag: ${stats.Vorschlag}
-    `;
-  }
+  document.getElementById("stats").innerText =
+    `Kritik: ${stats.Kritik} | Lob: ${stats.Lob} | Frage: ${stats.Frage} | Vorschlag: ${stats.Vorschlag}`;
 
   let list = all;
 
-  if(currentFilter !== "all"){
-    list = all.filter(m=>m.type === currentFilter);
+  if(currentFilter!=="all"){
+    list = all.filter(m=>m.type===currentFilter);
   }
 
   list.slice().reverse().forEach(m=>{
     const div=document.createElement("div");
-    div.className="msg "+m.type;
-    div.innerHTML=`<b>${m.type}</b><br>${m.text}`;
+    div.className="msg "+m.type+(m.isNew?" new":"");
+
+    const date = new Date(m.time || Date.now());
+    const time = date.toLocaleString();
+
+    div.innerHTML=`
+      <b>${m.type}</b><br>
+      ${m.text}<br>
+      <span style="font-size:12px;color:#888">${time}</span><br>
+      <button onclick="deleteMsg('${m.id}')" style="background:red;color:white;">
+        Löschen
+      </button>
+    `;
+
     chat.appendChild(div);
   });
 }
 
-// SENDEN (nur Mitglieder-Seite nutzen!)
-function send(){
-  const text = document.getElementById("text")?.value;
-  const type = document.getElementById("type")?.value;
-
-  if(!text) return;
-
-  db.ref("test/feedback").push({
-    text,
-    type,
-    time: Date.now()
-  });
-
-  document.getElementById("text").value="";
+// 🧹 DELETE
+function deleteMsg(id){
+  if(confirm("Löschen?")){
+    db.ref("test/feedback/"+id).remove();
+    location.reload();
+  }
 }
 
-function send(){
-  const text = document.getElementById("text").value;
-  const type = document.getElementById("type").value;
-
-  if(!text) return;
-
-  db.ref("test/feedback").push({
-    text,
-    type,
-    time: Date.now()
-  });
-
-  document.getElementById("text").value="";
-}
-
-// 🔥 HIER REIN
+// 🔑 Passwort anzeigen
 db.ref("test/settings/memberPassword").on("value", snap=>{
   document.getElementById("pwBox").innerText =
     "Code: " + (snap.val() || "-");
 });
 
+// 🔑 neues Passwort
 function generatePassword(){
   const newPw = Math.floor(1000 + Math.random() * 9000).toString();
 
@@ -148,8 +212,14 @@ function generatePassword(){
 
   alert("Neuer Code: " + newPw);
 }
-  
+
+// 🚫 KICK Mitglieder
+function kickMembers(){
+  if(confirm("Alle Mitglieder kicken?")){
+    db.ref("test/settings/forceLogoutMembers").set(Date.now());
+  }
+}
 </script>
-  
+
 </body>
 </html>
