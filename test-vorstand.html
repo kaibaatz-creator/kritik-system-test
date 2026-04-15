@@ -2,17 +2,19 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vorstand (Test)</title>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <style>
-body {
+body{
   background:#000;
   color:white;
   font-family:Arial;
   text-align:center;
+  margin:0;
 }
 
 /* LOGO */
@@ -22,45 +24,69 @@ body {
   display:block;
 }
 
-/* MESSAGES */
+/* CONTAINER */
+.container{
+  max-width:700px;
+  margin:auto;
+  padding:10px;
+}
+
+/* BUTTON GROUP */
+.btn-group{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:10px;
+}
+
+/* MOBILE */
+@media(max-width:600px){
+  .btn-group{
+    flex-direction:column;
+  }
+
+  button{
+    width:100%;
+  }
+}
+
+/* BUTTON */
+button{
+  padding:12px;
+  border-radius:10px;
+  border:none;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+/* MESSAGE */
 .msg{
   background:#1e1e1e;
-  margin:10px auto;
+  margin:10px 0;
   padding:14px;
   border-radius:14px;
-  max-width:700px;
   text-align:left;
 }
 
-/* FARBEN */
 .msg.Kritik{border-left:4px solid #ff4444; color:#ff4444;}
 .msg.Lob{border-left:4px solid #00ff99; color:#00ff99;}
 .msg.Frage{border-left:4px solid #00bfff; color:#00bfff;}
 .msg.Vorschlag{border-left:4px solid #ffaa00; color:#ffaa00;}
 
-/* 🔥 BLINKEN */
+/* BLINK */
 .blink{
-  animation: blinkBorder 1s infinite;
+  animation:blink 1s infinite;
 }
 
-@keyframes blinkBorder{
+@keyframes blink{
   0%{box-shadow:0 0 5px currentColor;}
   50%{box-shadow:0 0 20px currentColor;}
   100%{box-shadow:0 0 5px currentColor;}
 }
 
-/* BUTTON */
-button{
-  padding:10px;
-  margin:5px;
-  border-radius:10px;
-  border:none;
-  cursor:pointer;
-}
-
 /* LEGENDE */
 .legend span{
-  margin:0 10px;
+  margin:0 8px;
   font-weight:bold;
 }
 
@@ -76,18 +102,19 @@ button{
 
 <img src="logo.png" class="logo">
 
+<div class="container">
+
 <h2>👑 Vorstand (Test)</h2>
 
-<!-- 🔑 Passwort -->
-<div>
+<div class="btn-group">
   <button onclick="generatePassword()" style="background:orange;">
-    Neues Mitglieder Passwort
+    Neues Passwort
   </button>
-  <div id="pwBox"></div>
 </div>
 
-<!-- 🚫 KICK BUTTONS -->
-<div>
+<div id="pwBox"></div>
+
+<div class="btn-group">
   <button onclick="kickMembers()" style="background:red;color:white;">
     Mitglieder kicken
   </button>
@@ -97,10 +124,8 @@ button{
   </button>
 </div>
 
-<!-- 📊 Stats -->
 <div id="stats"></div>
 
-<!-- 🎨 LEGENDE -->
 <div class="legend">
   <span class="kritik">■ Kritik</span>
   <span class="lob">■ Lob</span>
@@ -108,8 +133,7 @@ button{
   <span class="vorschlag">■ Vorschlag</span>
 </div>
 
-<!-- FILTER -->
-<div>
+<div class="btn-group">
   <button onclick="setFilter('all')">Alle</button>
   <button onclick="setFilter('Kritik')">Kritik</button>
   <button onclick="setFilter('Lob')">Lob</button>
@@ -118,6 +142,8 @@ button{
 </div>
 
 <div id="chat"></div>
+
+</div>
 
 <script>
 const firebaseConfig = {
@@ -131,35 +157,47 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let all = [];
-let currentFilter = "all";
+let currentFilter="all";
+
+// 🔥 ADMIN SESSION (NEU!)
+const adminId = localStorage.getItem("adminId") || Date.now().toString();
+localStorage.setItem("adminId", adminId);
+
+// 👉 Vorstand registrieren
+db.ref("test/admins/"+adminId).set(true);
+db.ref("test/admins/"+adminId).onDisconnect().remove();
+
+// 👉 ADMIN KICK LISTENER (JETZT FUNKTIONIERT ES!)
+db.ref("test/settings/forceLogoutAdmins").on("value", snap=>{
+  if(snap.val()){
+    alert("Vorstand wurde gekickt!");
+    localStorage.removeItem("adminId");
+    location.reload();
+  }
+});
 
 // 🔥 LIVE
 db.ref("test/feedback").on("child_added", snap=>{
   const msg = {
     id: snap.key,
     ...snap.val(),
-    isNew: true
+    isNew:true
   };
 
   all.push(msg);
 
-  setTimeout(()=>{
-    msg.isNew = false;
-    render();
-  },15000); // 👉 15 Sekunden
+  setTimeout(()=>{msg.isNew=false; render();},15000);
 
   render();
 });
 
-// 🎯 FILTER
-function setFilter(filter){
-  currentFilter = filter;
+function setFilter(f){
+  currentFilter=f;
   render();
 }
 
-// 📊 RENDER
 function render(){
-  const chat = document.getElementById("chat");
+  const chat=document.getElementById("chat");
   chat.innerHTML="";
 
   let stats={Kritik:0,Lob:0,Frage:0,Vorschlag:0};
@@ -171,19 +209,13 @@ function render(){
   document.getElementById("stats").innerText =
     `Kritik: ${stats.Kritik} | Lob: ${stats.Lob} | Frage: ${stats.Frage} | Vorschlag: ${stats.Vorschlag}`;
 
-  let list = all;
-
-  if(currentFilter!=="all"){
-    list = all.filter(m=>m.type===currentFilter);
-  }
+  let list = currentFilter==="all"?all:all.filter(m=>m.type===currentFilter);
 
   list.slice().reverse().forEach(m=>{
     const div=document.createElement("div");
-
     div.className="msg "+m.type+(m.isNew?" blink":"");
 
-    const date = new Date(m.time || Date.now());
-    const time = date.toLocaleString();
+    const time=new Date(m.time||Date.now()).toLocaleString();
 
     div.innerHTML=`
       <b>${m.type}</b><br>
@@ -198,7 +230,6 @@ function render(){
   });
 }
 
-// 🧹 DELETE
 function deleteMsg(id){
   if(confirm("Löschen?")){
     db.ref("test/feedback/"+id).remove();
@@ -206,34 +237,29 @@ function deleteMsg(id){
   }
 }
 
-// 🔑 Passwort anzeigen
 db.ref("test/settings/memberPassword").on("value", snap=>{
   document.getElementById("pwBox").innerText =
-    "Code: " + (snap.val() || "-");
+    "Code: "+(snap.val()||"-");
 });
 
-// 🔑 neues Passwort
 function generatePassword(){
-  const newPw = Math.floor(1000 + Math.random() * 9000).toString();
+  const newPw = Math.floor(1000 + Math.random()*9000).toString();
 
   db.ref("test/settings/memberPassword").set(newPw);
   db.ref("test/settings/forceLogoutMembers").set(Date.now());
 
-  alert("Neuer Code: " + newPw);
+  alert("Neuer Code: "+newPw);
 }
 
-// 🚫 Mitglieder kicken
 function kickMembers(){
-  if(confirm("Alle Mitglieder kicken?")){
+  if(confirm("Mitglieder kicken?")){
     db.ref("test/settings/forceLogoutMembers").set(Date.now());
   }
 }
 
-// 👑 Vorstand kicken
 function kickAdmins(){
-  if(confirm("Alle Vorstände kicken?")){
+  if(confirm("ALLE Vorstände kicken?")){
     db.ref("test/settings/forceLogoutAdmins").set(Date.now());
-    location.reload();
   }
 }
 </script>
