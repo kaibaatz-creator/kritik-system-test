@@ -1,36 +1,81 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Start</title>
+
 <style>
 body{
   background:#000;
   color:white;
-  text-align:center;
   font-family:Arial;
+  text-align:center;
+  margin:0;
 }
-a{
+
+.logo{
+  height:120px;
+  margin:20px auto;
   display:block;
-  margin:15px;
-  padding:12px;
-  background:#222;
-  border-radius:10px;
-  color:white;
-  text-decoration:none;
 }
+
+/* GRID */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(2, 1fr);
+  gap:20px;
+  padding:20px;
+  max-width:500px;
+  margin:auto;
+}
+
+/* KACHEL */
+.card{
+  background:#1e1e1e;
+  border-radius:20px;
+  padding:30px 10px;
+  text-decoration:none;
+  color:white;
+  font-size:18px;
+  font-weight:bold;
+
+  box-shadow:0 0 10px rgba(0,0,0,0.6);
+  transition:0.2s;
+}
+
+.card:hover{
+  transform:scale(1.05);
+}
+
+/* FARBEN */
+.members{border:2px solid #00ff99;}
+.admin{border:2px solid #ffaa00;}
+.archive{border:2px solid #00bfff;}
 </style>
 </head>
 
 <body>
 
-<img src="logo.png" style="height:120px;"><br>
+<img src="logo.png" class="logo">
 
 <h2>System starten</h2>
 
-<a href="test-mitglieder.html">👥 Mitglieder</a>
-<a href="test-vorstand.html">👑 Vorstand</a>
-<a href="test-archiv.html">📊 Archiv</a>
+<div class="grid">
+
+  <a href="test-mitglieder.html" class="card members">
+    👥<br>Mitglieder
+  </a>
+
+  <a href="test-vorstand.html" class="card admin">
+    👑<br>Vorstand
+  </a>
+
+  <a href="test-archiv.html" class="card archive">
+    📊<br>Archiv
+  </a>
+
+</div>
 
 </body>
 </html>
