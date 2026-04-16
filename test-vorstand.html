@@ -172,7 +172,12 @@ function newPassword(){
 
 function newArchivePassword(){
   const pw = Math.floor(1000 + Math.random()*9000);
+
   db.ref("test/settings/archivePassword").set(pw);
+
+  // 🔥 NEU: alle im Archiv kicken
+  db.ref("test/settings/forceLogoutArchive").set(Date.now());
+
   document.getElementById("archivePwBox").innerText="Archiv Code: "+pw;
 }
 
