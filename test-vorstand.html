@@ -249,10 +249,17 @@ function deleteMsg(id){
   const pw = prompt("Passwort zum Löschen:");
   if(pw !== "2"){alert("Falsches Passwort");return;}
 
-  db.ref("test/archive/"+id).update({
-    status:"gelöscht",
-    deletedAt:Date.now()
-  });
+  const msg = all.find(m => m.id === id);
+
+  if(msg){
+    db.ref("test/archive/"+id).set({
+      text: msg.text,
+      type: msg.type,
+      time: msg.time,
+      status:"gelöscht",
+      deletedAt:Date.now()
+    });
+  }
 
   db.ref("test/feedback/"+id).remove();
 }
