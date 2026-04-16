@@ -69,8 +69,12 @@ function login(){
   const pw = document.getElementById("pw").value;
 
   if(pw === "1"){
-    if(!localStorage.getItem("adminLoginTime")){
-  localStorage.setItem("adminLoginTime", Date.now());
+  if(!localStorage.getItem("adminLoginTime")){
+  const now = Date.now();
+localStorage.setItem("adminLoginTime", now);
+
+// 🔥 Wichtig: alte Kick-Zeit resetten
+db.ref("test/settings/forceLogoutAdmins").set(0);
 }
     start();
   }else{
