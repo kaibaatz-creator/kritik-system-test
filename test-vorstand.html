@@ -73,8 +73,6 @@ function login(){
   const now = Date.now();
 localStorage.setItem("adminLoginTime", now);
 
-// 🔥 Wichtig: alte Kick-Zeit resetten
-db.ref("test/settings/forceLogoutAdmins").set(0);
 }
     start();
   }else{
@@ -171,9 +169,13 @@ db.ref("test/settings/archivePassword").on("value", snap=>{
 // 👥 ONLINE
 function loadOnline(){
   db.ref("test/admins").on("value", a=>{
-    db.ref("test/members").on("value", m=>{
+    const admins = a.numChildren();
+
+    db.ref("test/members").once("value", m=>{
+      const members = m.numChildren();
+
       document.getElementById("online").innerText =
-        "👑 Vorstand: "+a.numChildren()+" | 👥 Mitglieder: "+m.numChildren();
+        "👑 Vorstand: "+admins+" | 👥 Mitglieder: "+members;
     });
   });
 }
