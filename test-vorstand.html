@@ -188,12 +188,26 @@ function kickAdmins(){
 }
 
 // 🔥 MESSAGES
-function formatTime(timestamp){
+function formatTimeAgo(timestamp){
   if(!timestamp) return "";
-  const d = new Date(timestamp);
 
-  return d.toLocaleDateString("de-DE") + " | " +
-         d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+  const now = Date.now();
+  const diff = Math.floor((now - timestamp)/1000);
+
+  if(diff < 60) return "gerade eben";
+
+  if(diff < 3600){
+    const m = Math.floor(diff/60);
+    return "vor " + m + " Minute" + (m>1?"n":"");
+  }
+
+  if(diff < 86400){
+    const h = Math.floor(diff/3600);
+    return "vor " + h + " Stunde" + (h>1?"n":"");
+  }
+
+  const d = Math.floor(diff/86400);
+  return "vor " + d + " Tag" + (d>1?"en":"");
 }
 function loadMessages(){
   db.ref("test/feedback").on("child_added", snap=>{
@@ -222,7 +236,7 @@ function render(){
 div.innerHTML=`
   <b>${m.type}</b><br>
   ${m.text}<br>
-  <small style="opacity:0.6;">${formatTime(m.time)}</small><br><br>
+  <small style="opacity:0.6;">${formatTimeAgo(m.time)}</small><br><br>
   <button class="red" onclick="deleteMsg('${m.id}')">Löschen</button>
 `;
 
