@@ -147,6 +147,21 @@ function start(){
   loadMessages();
 }
 
+  // 🔑 Passwort wieder anzeigen
+db.ref("test/settings/memberPassword").on("value", snap=>{
+  const pw = snap.val();
+  if(pw){
+    document.getElementById("pwBox").innerText="Code: "+pw;
+  }
+});
+
+db.ref("test/settings/archivePassword").on("value", snap=>{
+  const pw = snap.val();
+  if(pw){
+    document.getElementById("archivePwBox").innerText="Archiv Code: "+pw;
+  }
+});
+  
 // 👥 ONLINE
 function loadOnline(){
   db.ref("test/admins").on("value", a=>{
