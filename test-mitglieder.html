@@ -19,6 +19,13 @@ body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
   text-align:left;
   width:95%;
   max-width:900px;
+
+  box-shadow:0 4px 15px rgba(0,0,0,0.6);
+  transition:0.2s;
+}
+
+.msg:hover{
+  transform:scale(1.01);
 }
 
 .msg.Kritik{border-left:4px solid #ff4444;color:#ff4444;}
@@ -26,10 +33,13 @@ body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
 .msg.Frage{border-left:4px solid #00bfff;color:#00bfff;}
 .msg.Vorschlag{border-left:4px solid #ffaa00;color:#ffaa00;}
 
-.blink{animation:blink 1s infinite;}
+.blink{
+  animation:blink 1.5s ease-in-out infinite;
+}
+
 @keyframes blink{
   0%{box-shadow:0 0 5px currentColor;}
-  50%{box-shadow:0 0 20px currentColor;}
+  50%{box-shadow:0 0 15px currentColor;}
   100%{box-shadow:0 0 5px currentColor;}
 }
 
@@ -41,12 +51,39 @@ body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
 
 #typeButtons button{
   margin:5px;
-  padding:8px 12px;
-  border-radius:8px;
+  padding:10px 14px;
+  border-radius:10px;
   border:none;
   cursor:pointer;
   font-weight:bold;
+  transition:0.2s;
+  opacity:0.6;
 }
+
+/* HOVER */
+#typeButtons button:hover{
+  transform:scale(1.05);
+  opacity:1;
+}
+
+/* AKTIV */
+#typeButtons button.active{
+  opacity:1;
+  box-shadow:0 0 10px currentColor, 0 0 20px currentColor;
+}
+  
+textarea{
+  width:90%;
+  padding:12px;
+  border-radius:12px;
+  border:none;
+  font-size:16px;
+  outline:none;
+  background:#111;
+  color:white;
+  box-shadow:0 0 10px rgba(0,0,0,0.5);
+}
+
 </style>
 </head>
 
@@ -143,6 +180,9 @@ function start(){
 
   loadOnline();
   loadMessages();
+  setTimeout(()=>{
+  document.querySelector("#typeButtons button").classList.add("active");
+},100);
 }
 
 // BUTTON AUSWAHL
@@ -150,10 +190,10 @@ function setType(type){
   selectedType = type;
 
   document.querySelectorAll("#typeButtons button").forEach(b=>{
-    b.style.opacity = "0.5";
+    b.classList.remove("active");
   });
 
-  event.target.style.opacity = "1";
+  event.target.classList.add("active");
 }
 
 // ONLINE
