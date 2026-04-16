@@ -14,10 +14,13 @@ body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
 
 .msg{
   background:#1e1e1e;
-  margin:10px 0;
-  padding:14px;
-  border-radius:14px;
+  margin:15px auto;
+  padding:18px;
+  border-radius:16px;
   text-align:left;
+  width:95%;
+  max-width:900px;
+  font-size:16px;
 }
 
 .msg.Kritik{border-left:4px solid #ff4444;color:#ff4444;}
@@ -31,6 +34,16 @@ body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
   50%{box-shadow:0 0 20px currentColor;}
   100%{box-shadow:0 0 5px currentColor;}
 }
+
+.legend span{
+  margin:0 8px;
+  font-weight:bold;
+}
+
+.kritik{color:#ff4444;}
+.lob{color:#00ff99;}
+.frage{color:#00bfff;}
+.vorschlag{color:#ffaa00;}
 </style>
 </head>
 
@@ -100,9 +113,15 @@ function start(){
   document.body.innerHTML=`
   <img src="logo.png" class="logo">
   <h2>👥 Mitglieder (Test)</h2>
+  <div class="legend">
+  <span class="kritik">■ Kritik</span>
+  <span class="lob">■ Lob</span>
+  <span class="frage">■ Frage</span>
+  <span class="vorschlag">■ Vorschlag</span>
+</div>
   <div id="online"></div>
 
-  <input id="text" placeholder="Nachricht">
+  <input id="text" style="width:60%;padding:8px;"> placeholder="Nachricht">
   <select id="type">
     <option>Kritik</option>
     <option>Lob</option>
