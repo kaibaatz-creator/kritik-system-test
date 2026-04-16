@@ -180,6 +180,17 @@ function start(){
 
   loadOnline();
   loadMessages();
+  // 🔥 KICK CHECK (MITGLIEDER)
+db.ref("test/settings/forceLogoutMembers").on("value", snap=>{
+  const logoutTime = snap.val();
+  const myTime = localStorage.getItem("memberLoginTime");
+
+  if(logoutTime && myTime && logoutTime > myTime){
+    alert("Du wurdest gekickt!");
+    localStorage.clear();
+    location.reload();
+  }
+});
   setTimeout(()=>{
   document.querySelector("#typeButtons button").classList.add("active");
 },100);
