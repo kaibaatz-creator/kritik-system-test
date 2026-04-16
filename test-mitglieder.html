@@ -121,14 +121,20 @@ function start(){
 </div>
   <div id="online"></div>
 
-  <input id="text" style="width:60%;padding:8px;"> placeholder="Nachricht">
-  <select id="type">
-    <option>Kritik</option>
-    <option>Lob</option>
-    <option>Frage</option>
-    <option>Vorschlag</option>
-  </select>
-  <button onclick="send()">Senden</button>
+<br>
+<textarea id="text" rows="4" placeholder="Nachricht"
+style="width:90%;padding:10px;border-radius:10px;"></textarea>
+
+<br><br>
+
+<select id="type">
+  <option>Kritik</option>
+  <option>Lob</option>
+  <option>Frage</option>
+  <option>Vorschlag</option>
+</select>
+
+<button onclick="send()">Senden</button>
 
   <div id="chat"></div>
   `;
