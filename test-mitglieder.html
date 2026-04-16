@@ -66,6 +66,28 @@ textarea{
   opacity:1;
   box-shadow:0 0 10px currentColor,0 0 20px currentColor;
 }
+
+.sendBtn{
+  margin-top:10px;
+  padding:10px 20px;
+  border-radius:12px;
+  border:none;
+  cursor:pointer;
+  font-weight:bold;
+  font-size:15px;
+
+  background:linear-gradient(45deg,#00bfff,#00ffcc);
+  color:black;
+
+  box-shadow:0 0 10px #00bfff;
+  transition:0.2s;
+}
+
+.sendBtn:hover{
+  transform:scale(1.05);
+  box-shadow:0 0 20px #00bfff;
+}
+  
 </style>
 </head>
 
@@ -162,7 +184,7 @@ function start(){
 
   <br>
 
-  <button onclick="send()">Senden</button>
+  <button class="sendBtn" onclick="send()">Senden</button>
 
   <div id="chat"></div>
   `;
