@@ -41,42 +41,13 @@ button{padding:10px;border:none;border-radius:10px;cursor:pointer;font-weight:bo
 
 <body>
 
-<img src="logo.png" class="logo">
-
-<div class="container">
-
-<h2>👑 Vorstand (Test)</h2>
-
-<div id="online"></div>
-
-<div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
-  <div>
-    <button class="orange" onclick="newPassword()">Mitglieder Passwort</button>
-    <div id="pwBox"></div>
-  </div>
-
-  <div>
-    <button class="orange" onclick="newArchivePassword()">Archiv Passwort</button>
-    <div id="archivePwBox"></div>
-  </div>
-</div>
-
-<br>
-
-<button class="red" onclick="kickMembers()">Mitglieder kicken</button>
-<button class="red" onclick="kickAdmins()">Vorstand kicken</button>
-
-<div id="stats"></div>
-
-<div class="legend">
-  <span class="kritik">■ Kritik</span>
-  <span class="lob">■ Lob</span>
-  <span class="frage">■ Frage</span>
-  <span class="vorschlag">■ Vorschlag</span>
-</div>
-
-<div id="chat"></div>
-
+<!-- 🔐 LOGIN -->
+<div id="login">
+  <img src="logo.png" class="logo">
+  <h2>👑 Vorstand Login</h2>
+  <input id="pw" placeholder="Passwort">
+  <button onclick="login()">Login</button>
+  <div id="error" style="color:red;"></div>
 </div>
 
 <script>
@@ -91,8 +62,92 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let all=[];
+let adminId="";
 
-// ONLINE
+// 🔐 LOGIN
+function login(){
+  const pw = document.getElementById("pw").value;
+
+  if(pw === "1"){
+    localStorage.setItem("adminLoginTime", Date.now());
+    start();
+  }else{
+    document.getElementById("error").innerText="Falsches Passwort";
+  }
+}
+
+// AUTO LOGIN
+if(localStorage.getItem("adminLoginTime")){
+  start();
+}
+
+// 🚀 START
+function start(){
+
+  document.getElementById("login").style.display="none";
+
+  document.body.innerHTML = `
+  <img src="logo.png" class="logo">
+
+  <div class="container">
+
+  <h2>👑 Vorstand (Test)</h2>
+
+  <div id="online"></div>
+
+  <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
+    <div>
+      <button class="orange" onclick="newPassword()">Mitglieder Passwort</button>
+      <div id="pwBox"></div>
+    </div>
+
+    <div>
+      <button class="orange" onclick="newArchivePassword()">Archiv Passwort</button>
+      <div id="archivePwBox"></div>
+    </div>
+  </div>
+
+  <br>
+
+  <button class="red" onclick="kickMembers()">Mitglieder kicken</button>
+  <button class="red" onclick="kickAdmins()">Vorstand kicken</button>
+
+  <div class="legend">
+    <span class="kritik">■ Kritik</span>
+    <span class="lob">■ Lob</span>
+    <span class="frage">■ Frage</span>
+    <span class="vorschlag">■ Vorschlag</span>
+  </div>
+
+  <div id="chat"></div>
+
+  </div>
+  `;
+
+  adminId = localStorage.getItem("adminId") || Date.now().toString();
+  localStorage.setItem("adminId", adminId);
+
+  const ref = db.ref("test/admins/"+adminId);
+  ref.set(true);
+  ref.onDisconnect().remove();
+
+  // 🔥 KICK CHECK (JETZT FUNKTIONIERT ES)
+  db.ref("test/settings/forceLogoutAdmins").on("value", snap=>{
+    const logoutTime = snap.val();
+    const myTime = localStorage.getItem("adminLoginTime");
+
+    if(logoutTime && myTime && logoutTime > myTime){
+      alert("Du wurdest gekickt!");
+      localStorage.clear();
+      location.reload();
+    }
+  });
+
+  loadOnline();
+  loadMessages();
+}
+
+// 👥 ONLINE
 function loadOnline(){
   db.ref("test/admins").on("value", a=>{
     db.ref("test/members").on("value", m=>{
@@ -102,7 +157,7 @@ function loadOnline(){
   });
 }
 
-// PASSWÖRTER
+// 🔑 PASSWÖRTER
 function newPassword(){
   const pw = Math.floor(1000 + Math.random()*9000);
   db.ref("test/settings/memberPassword").set(pw);
@@ -115,7 +170,7 @@ function newArchivePassword(){
   document.getElementById("archivePwBox").innerText="Archiv Code: "+pw;
 }
 
-// KICK
+// 🚫 KICK
 function kickMembers(){
   db.ref("test/settings/forceLogoutMembers").set(Date.now());
   db.ref("test/members").remove();
@@ -126,11 +181,12 @@ function kickAdmins(){
   db.ref("test/admins").remove();
 }
 
-// MESSAGES
+// 🔥 MESSAGES
 function loadMessages(){
   db.ref("test/feedback").on("child_added", snap=>{
     const msg={id:snap.key,...snap.val(),isNew:true};
     all.push(msg);
+
     setTimeout(()=>{msg.isNew=false;render();},15000);
     render();
   });
@@ -160,7 +216,7 @@ function render(){
   });
 }
 
-// DELETE
+// 🧹 DELETE
 function deleteMsg(id){
   const pw = prompt("Passwort zum Löschen:");
   if(pw !== "2"){alert("Falsches Passwort");return;}
@@ -172,33 +228,6 @@ function deleteMsg(id){
 
   db.ref("test/feedback/"+id).remove();
 }
-
-// START
-const adminId = localStorage.getItem("adminId") || Date.now().toString();
-localStorage.setItem("adminId", adminId);
-
-// 🔥 WICHTIGER FIX
-if(!localStorage.getItem("adminLoginTime")){
-  localStorage.setItem("adminLoginTime", Date.now());
-}
-
-// 🔥 KICK CHECK
-db.ref("test/settings/forceLogoutAdmins").on("value", snap=>{
-  const logoutTime = snap.val();
-  const myTime = localStorage.getItem("adminLoginTime");
-
-  if(logoutTime && myTime && logoutTime > myTime){
-    alert("Du wurdest gekickt!");
-    localStorage.clear();
-    location.reload();
-  }
-});
-
-db.ref("test/admins/"+adminId).set(true);
-db.ref("test/admins/"+adminId).onDisconnect().remove();
-
-loadOnline();
-loadMessages();
 </script>
 
 </body>
