@@ -1,160 +1,36 @@
 <!DOCTYPE html>
-<html lang="de">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Realtime Feedback Test</title>
-
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
+<title>Start</title>
 <style>
-body {
-  background: #000;
-  color: white;
-  font-family: Arial;
+body{
+  background:#000;
+  color:white;
+  text-align:center;
+  font-family:Arial;
 }
-
-#chat {
-  max-width: 700px;
-  margin: auto;
-  padding: 10px;
-}
-
-.msg {
-  background: #1e1e1e;
-  margin: 10px 0;
-  padding: 14px;
-  border-radius: 14px;
-}
-
-.msg.Kritik { border-left: 4px solid #ff4444; }
-.msg.Lob { border-left: 4px solid #00ff99; }
-.msg.Frage { border-left: 4px solid #00bfff; }
-.msg.Vorschlag { border-left: 4px solid #ffaa00; }
-
-button {
-  padding: 10px;
-  margin: 5px;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
-}
-
-.active {
-  background: #00ff99;
-  color: black;
+a{
+  display:block;
+  margin:15px;
+  padding:12px;
+  background:#222;
+  border-radius:10px;
+  color:white;
+  text-decoration:none;
 }
 </style>
 </head>
 
 <body>
 
-<h2 style="text-align:center;">🔥 Realtime Feedback Test</h2>
+<img src="logo.png" style="height:120px;"><br>
 
-<div style="text-align:center;">
-  <input id="text" placeholder="Nachricht">
-  
-  <select id="type">
-    <option>Kritik</option>
-    <option>Lob</option>
-    <option>Frage</option>
-    <option>Vorschlag</option>
-  </select>
+<h2>System starten</h2>
 
-  <button onclick="send()">Senden</button>
-</div>
-
-<div style="text-align:center;">
-  <button onclick="setFilter('all')" class="active">Alle</button>
-  <button onclick="setFilter('Kritik')">Kritik</button>
-  <button onclick="setFilter('Lob')">Lob</button>
-  <button onclick="setFilter('Frage')">Frage</button>
-  <button onclick="setFilter('Vorschlag')">Vorschlag</button>
-</div>
-
-<div id="chat"></div>
-
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyCFjuJ-XSN0YnvAilerXPkXbw2iR2ixBv8",
-  authDomain: "kritik-system.firebaseapp.com",
-  databaseURL: "https://kritik-system-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "kritik-system"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-let currentFilter = "all";
-let allMessages = [];
-
-// 🔥 LIVE
-db.ref("test/feedback").on("child_added", snap => {
-  const data = snap.val();
-  allMessages.push(data);
-  render();
-});
-
-function send(){
-  const isAdmin = false; // 👉 später dynamisch
-
-  if(!isAdmin){
-    alert("Nur Mitglieder dürfen schreiben!");
-    return;
-  }
-
-  const text = document.getElementById("text").value;
-  const type = document.getElementById("type").value;
-
-  if(!text) return;
-
-  db.ref("test/feedback").push({
-    text: text,
-    type: type,
-    time: Date.now()
-  });
-
-  document.getElementById("text").value="";
-}
-
-  document.getElementById("text").value="";
-}
-
-function setFilter(filter){
-  currentFilter = filter;
-
-  document.querySelectorAll("button").forEach(b=>{
-    b.classList.remove("active");
-  });
-
-  event.target.classList.add("active");
-
-  render();
-}
-
-function render(){
-  const chat = document.getElementById("chat");
-  chat.innerHTML = "";
-
-  let list = allMessages;
-
-  if(currentFilter !== "all"){
-    list = list.filter(m => m.type === currentFilter);
-  }
-
-  list.slice().reverse().forEach(m => {
-    const div = document.createElement("div");
-    div.className = "msg " + m.type;
-
-    div.innerHTML = `
-      <b>${m.type}</b><br>
-      ${m.text}
-    `;
-
-    chat.appendChild(div);
-  });
-}
-</script>
+<a href="test-mitglieder.html">👥 Mitglieder</a>
+<a href="test-vorstand.html">👑 Vorstand</a>
+<a href="test-archiv.html">📊 Archiv</a>
 
 </body>
 </html>
