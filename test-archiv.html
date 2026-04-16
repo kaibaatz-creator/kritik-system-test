@@ -129,6 +129,7 @@ function render(){
   list.innerHTML="";
 
   all.slice().reverse().forEach(m=>{
+  if(!m.text || !m.type) return;
 
     if(search && !m.text.toLowerCase().includes(search)) return;
 
