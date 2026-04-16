@@ -6,6 +6,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
 body{
@@ -123,7 +124,7 @@ function start(){
   <br>
 
   <button class="red" onclick="clearArchive()">Archiv löschen</button>
-  <button class="white" onclick="exportCSV()">Export Excel</button>
+  <button class="white" onclick="exportExcel()">Export Excel</button>
 
   <table>
     <thead>
@@ -210,20 +211,27 @@ function clearArchive(){
 }
 
 // 📤 EXPORT
-function exportCSV(){
-  let csv="Typ;Nachricht;Zeit;Status\n";
+function exportExcel(){
+
+  const data = [];
 
   all.forEach(m=>{
-    csv+=`${m.type};${m.text};${formatTime(m.time)};${m.status||"aktiv"}\n`;
+    if(!m.text || !m.type) return;
+
+    data.push({
+      Typ: m.type,
+      Nachricht: m.text,
+      Zeit: formatTime(m.time),
+      Status: m.status || "aktiv"
+    });
   });
 
-  const blob=new Blob([csv],{type:"text/csv"});
-  const url=URL.createObjectURL(blob);
+  const worksheet = XLSX.utils.json_to_sheet(data);
+  const workbook = XLSX.utils.book_new();
 
-  const a=document.createElement("a");
-  a.href=url;
-  a.download="archiv.csv";
-  a.click();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Archiv");
+
+  XLSX.writeFile(workbook, "archiv.xlsx");
 }
 </script>
 
