@@ -160,7 +160,13 @@ function loadOnline(){
 // 🔑 PASSWÖRTER
 function newPassword(){
   const pw = Math.floor(1000 + Math.random()*9000);
+
   db.ref("test/settings/memberPassword").set(pw);
+
+  // 🔥 NEU: alle Mitglieder kicken
+  db.ref("test/settings/forceLogoutMembers").set(Date.now());
+  db.ref("test/members").remove();
+
   document.getElementById("pwBox").innerText="Code: "+pw;
 }
 
