@@ -101,6 +101,18 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+// 🔥 KICK CHECK ARCHIV
+db.ref("test/settings/forceLogoutArchive").on("value", snap=>{
+  const logoutTime = snap.val();
+  const myTime = localStorage.getItem("archiveLoginTime");
+
+  if(logoutTime && myTime && logoutTime > myTime){
+    alert("Archiv Zugriff wurde zurückgesetzt!");
+    localStorage.clear();
+    location.reload();
+  }
+});
+
 let all=[];
 
 // 🔥 ZEIT FORMAT (ECHTES DATUM)
