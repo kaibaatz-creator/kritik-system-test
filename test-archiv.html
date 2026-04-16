@@ -13,6 +13,7 @@ body{
   color:white;
   font-family:Arial;
   text-align:center;
+  margin:0;
 }
 
 .logo{
@@ -51,13 +52,8 @@ th,td{
   padding:10px;
 }
 
-th{
-  background:#111;
-}
-
-tr:nth-child(even){
-  background:#111;
-}
+th{background:#111;}
+tr:nth-child(even){background:#111;}
 
 .kritik{color:#ff4444;}
 .lob{color:#00ff99;}
@@ -68,27 +64,14 @@ tr:nth-child(even){
 
 <body>
 
-<img src="logo.png" class="logo">
-<h2>📊 Archiv</h2>
-
-<input id="search" placeholder="Suche..." oninput="render()">
-
-<br>
-
-<button class="red" onclick="clearArchive()">Archiv löschen</button>
-<button class="white" onclick="exportCSV()">Export Excel</button>
-
-<table>
-  <thead>
-    <tr>
-      <th>Typ</th>
-      <th>Nachricht</th>
-      <th>Zeit</th>
-      <th>Status</th>
-    </tr>
-  </thead>
-  <tbody id="list"></tbody>
-</table>
+<!-- 🔐 LOGIN -->
+<div id="login">
+  <img src="logo.png" class="logo">
+  <h2>📊 Archiv Login</h2>
+  <input id="pw" placeholder="Code">
+  <button onclick="login()">Login</button>
+  <div id="error" style="color:red;"></div>
+</div>
 
 <script>
 const firebaseConfig = {
@@ -101,8 +84,64 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-  
-// 🔥 KICK CHECK ARCHIV
+let archivePassword = "";
+let all = [];
+
+// 🔑 Passwort laden
+db.ref("test/settings/archivePassword").on("value", snap=>{
+  archivePassword = snap.val() || "";
+});
+
+// 🔐 LOGIN
+function login(){
+  const pw = document.getElementById("pw").value;
+
+  if(pw === String(archivePassword)){
+    localStorage.setItem("archiveLoginTime", Date.now());
+    start();
+  }else{
+    document.getElementById("error").innerText="Falscher Code";
+  }
+}
+
+// AUTO LOGIN
+if(localStorage.getItem("archiveLoginTime")){
+  start();
+}
+
+// 🚀 START
+function start(){
+
+  document.getElementById("login").style.display="none";
+
+  document.body.innerHTML = `
+  <img src="logo.png" class="logo">
+  <h2>📊 Archiv</h2>
+
+  <input id="search" placeholder="Suche..." oninput="render()">
+
+  <br>
+
+  <button class="red" onclick="clearArchive()">Archiv löschen</button>
+  <button class="white" onclick="exportCSV()">Export Excel</button>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Typ</th>
+        <th>Nachricht</th>
+        <th>Zeit</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="list"></tbody>
+  </table>
+  `;
+
+  loadData();
+}
+
+// 🔥 KICK CHECK
 db.ref("test/settings/forceLogoutArchive").on("value", snap=>{
   const logoutTime = snap.val();
   const myTime = localStorage.getItem("archiveLoginTime");
@@ -114,35 +153,33 @@ db.ref("test/settings/forceLogoutArchive").on("value", snap=>{
   }
 });
 
-let all=[];
+// 📦 DATEN LADEN
+function loadData(){
+  db.ref("test/archive").on("value", snap=>{
+    all = [];
+    snap.forEach(child=>{
+      all.push(child.val());
+    });
+    render();
+  });
+}
 
-// 🔥 ZEIT FORMAT (ECHTES DATUM)
+// 🕒 ZEIT FORMAT
 function formatTime(timestamp){
   if(!timestamp) return "";
   const d = new Date(timestamp);
-
   return d.toLocaleDateString("de-DE") + " " +
          d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
 }
 
-// LOAD
-db.ref("test/archive").on("value", snap=>{
-  all=[];
-  snap.forEach(child=>{
-    all.push(child.val());
-  });
-
-  render();
-});
-
-// RENDER
+// 🎨 RENDER
 function render(){
   const search=document.getElementById("search").value.toLowerCase();
   const list=document.getElementById("list");
   list.innerHTML="";
 
   all.slice().reverse().forEach(m=>{
-  if(!m.text || !m.type) return;
+    if(!m.text || !m.type) return;
 
     if(search && !m.text.toLowerCase().includes(search)) return;
 
@@ -165,15 +202,14 @@ function render(){
   });
 }
 
-// 🔥 ARCHIV LÖSCHEN
+// 🧹 ARCHIV LÖSCHEN
 function clearArchive(){
   const pw = prompt("Passwort?");
   if(pw!=="2") return alert("Falsch!");
-
   db.ref("test/archive").remove();
 }
 
-// 🔥 EXPORT CSV
+// 📤 EXPORT
 function exportCSV(){
   let csv="Typ;Nachricht;Zeit;Status\n";
 
