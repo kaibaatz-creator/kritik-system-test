@@ -10,7 +10,6 @@
 <style>
 body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
 .logo{height:150px;margin:20px auto;display:block;}
-.container{max-width:700px;margin:auto;padding:10px;}
 
 .msg{
   background:#1e1e1e;
@@ -20,7 +19,6 @@ body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
   text-align:left;
   width:95%;
   max-width:900px;
-  font-size:16px;
 }
 
 .msg.Kritik{border-left:4px solid #ff4444;color:#ff4444;}
@@ -35,15 +33,20 @@ body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
   100%{box-shadow:0 0 5px currentColor;}
 }
 
-.legend span{
-  margin:0 8px;
-  font-weight:bold;
-}
-
+.legend span{margin:0 8px;font-weight:bold;}
 .kritik{color:#ff4444;}
 .lob{color:#00ff99;}
 .frage{color:#00bfff;}
 .vorschlag{color:#ffaa00;}
+
+#typeButtons button{
+  margin:5px;
+  padding:8px 12px;
+  border-radius:8px;
+  border:none;
+  cursor:pointer;
+  font-weight:bold;
+}
 </style>
 </head>
 
@@ -70,11 +73,14 @@ const db = firebase.database();
 
 let currentPassword="";
 let all=[];
+let selectedType="Kritik";
 
+// Passwort laden
 db.ref("test/settings/memberPassword").on("value", snap=>{
   currentPassword=snap.val()||"";
 });
 
+// LOGIN
 function login(){
   const pw=document.getElementById("pw").value;
 
@@ -86,8 +92,10 @@ function login(){
   }
 }
 
+// AUTO LOGIN
 if(localStorage.getItem("memberLoginTime")) start();
 
+// START
 function start(){
 
   document.getElementById("login").style.display="none";
@@ -99,42 +107,36 @@ function start(){
   ref.set(true);
   ref.onDisconnect().remove();
 
-  db.ref("test/settings/forceLogoutMembers").on("value", snap=>{
-    const logoutTime=snap.val();
-    const myTime=localStorage.getItem("memberLoginTime");
-
-    if(logoutTime && logoutTime > myTime){
-      alert("Du wurdest gekickt!");
-      localStorage.clear();
-      location.reload();
-    }
-  });
-
   document.body.innerHTML=`
   <img src="logo.png" class="logo">
   <h2>👥 Mitglieder (Test)</h2>
+
   <div class="legend">
-  <span class="kritik">■ Kritik</span>
-  <span class="lob">■ Lob</span>
-  <span class="frage">■ Frage</span>
-  <span class="vorschlag">■ Vorschlag</span>
-</div>
+    <span class="kritik">■ Kritik</span>
+    <span class="lob">■ Lob</span>
+    <span class="frage">■ Frage</span>
+    <span class="vorschlag">■ Vorschlag</span>
+  </div>
+
   <div id="online"></div>
 
-<br>
-<textarea id="text" rows="4" placeholder="Nachricht"
-style="width:90%;padding:10px;border-radius:10px;"></textarea>
+  <br>
 
-<br><br>
+  <textarea id="text" rows="4" placeholder="Nachricht"
+  style="width:90%;padding:10px;border-radius:10px;"></textarea>
 
-<select id="type">
-  <option>Kritik</option>
-  <option>Lob</option>
-  <option>Frage</option>
-  <option>Vorschlag</option>
-</select>
+  <br>
 
-<button onclick="send()">Senden</button>
+  <div id="typeButtons">
+    <button onclick="setType('Kritik')" class="kritik">Kritik</button>
+    <button onclick="setType('Lob')" class="lob">Lob</button>
+    <button onclick="setType('Frage')" class="frage">Frage</button>
+    <button onclick="setType('Vorschlag')" class="vorschlag">Vorschlag</button>
+  </div>
+
+  <br>
+
+  <button onclick="send()">Senden</button>
 
   <div id="chat"></div>
   `;
@@ -143,6 +145,18 @@ style="width:90%;padding:10px;border-radius:10px;"></textarea>
   loadMessages();
 }
 
+// BUTTON AUSWAHL
+function setType(type){
+  selectedType = type;
+
+  document.querySelectorAll("#typeButtons button").forEach(b=>{
+    b.style.opacity = "0.5";
+  });
+
+  event.target.style.opacity = "1";
+}
+
+// ONLINE
 function loadOnline(){
   db.ref("test/admins").on("value", a=>{
     db.ref("test/members").on("value", m=>{
@@ -152,6 +166,7 @@ function loadOnline(){
   });
 }
 
+// MESSAGES
 function loadMessages(){
   db.ref("test/feedback").on("child_added", snap=>{
     const msg={id:snap.key,...snap.val(),isNew:true};
@@ -167,6 +182,7 @@ function loadMessages(){
   });
 }
 
+// RENDER
 function render(){
   const chat=document.getElementById("chat");
   chat.innerHTML="";
@@ -180,13 +196,12 @@ function render(){
   });
 }
 
+// SEND
 function send(){
   const text=document.getElementById("text").value;
-  const type=document.getElementById("type").value;
   if(!text) return;
 
-  const newMsg={text,type,time:Date.now()};
-
+  const newMsg={text, type:selectedType, time:Date.now()};
   const ref = db.ref("test/feedback").push(newMsg);
 
   db.ref("test/archive/"+ref.key).set({
