@@ -3,21 +3,46 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Archiv</title>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-  
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
-body{background:#000;color:white;font-family:Arial;text-align:center;}
+body{
+  background:#000;
+  color:white;
+  font-family:Arial;
+  text-align:center;
+}
 
-.logo{height:150px;margin:20px auto;display:block;}
+.logo{
+  height:150px;
+  margin:20px auto;
+  display:block;
+}
+
+input{
+  padding:10px;
+  border-radius:10px;
+  border:none;
+  width:250px;
+}
+
+button{
+  padding:10px 15px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:bold;
+  margin:5px;
+}
+
+.red{background:red;color:white;}
+.white{background:#ddd;color:black;}
 
 table{
   width:95%;
-  margin:auto;
+  margin:20px auto;
   border-collapse:collapse;
 }
 
@@ -26,43 +51,44 @@ th,td{
   padding:10px;
 }
 
-th{background:#111;}
-
-input{
-  padding:10px;
-  margin:10px;
-  border-radius:8px;
-  border:none;
-  width:200px;
+th{
+  background:#111;
 }
 
-button{
-  padding:10px;
-  border:none;
-  border-radius:10px;
-  cursor:pointer;
-  font-weight:bold;
-  margin:10px;
+tr:nth-child(even){
+  background:#111;
 }
 
-.red{background:red;color:white;}
-
-.Kritik{color:#ff4444;}
-.Lob{color:#00ff99;}
-.Frage{color:#00bfff;}
-.Vorschlag{color:#ffaa00;}
+.kritik{color:#ff4444;}
+.lob{color:#00ff99;}
+.frage{color:#00bfff;}
+.vorschlag{color:#ffaa00;}
 </style>
 </head>
 
 <body>
 
-<div id="login">
-  <img src="logo.png" class="logo">
-  <h2>📊 Archiv Login</h2>
-  <input id="pw" placeholder="Code">
-  <button onclick="login()">Login</button>
-  <div id="error" style="color:red;"></div>
-</div>
+<img src="logo.png" class="logo">
+<h2>📊 Archiv</h2>
+
+<input id="search" placeholder="Suche..." oninput="render()">
+
+<br>
+
+<button class="red" onclick="clearArchive()">Archiv löschen</button>
+<button class="white" onclick="exportCSV()">Export Excel</button>
+
+<table>
+  <thead>
+    <tr>
+      <th>Typ</th>
+      <th>Nachricht</th>
+      <th>Zeit</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody id="list"></tbody>
+</table>
 
 <script>
 const firebaseConfig = {
@@ -75,190 +101,79 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// 🔑 AUTO LOGIN
-if(localStorage.getItem("archiveLoginTime")){
-  start();
-}
-
-let archivePw="";
 let all=[];
 
-// 🔑 Passwort laden
-db.ref("test/settings/archivePassword").on("value", snap=>{
-  archivePw = snap.val() || "";
+// 🔥 ZEIT FORMAT (ECHTES DATUM)
+function formatTime(timestamp){
+  if(!timestamp) return "";
+  const d = new Date(timestamp);
+
+  return d.toLocaleDateString("de-DE") + " " +
+         d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+}
+
+// LOAD
+db.ref("test/archive").on("value", snap=>{
+  all=[];
+  snap.forEach(child=>{
+    all.push(child.val());
+  });
+
+  render();
 });
 
-// LOGIN
-function login(){
-  const pw=document.getElementById("pw").value;
-
-  if(pw === String(archivePw)){
-    localStorage.setItem("archiveLoginTime", Date.now());
-    start();
-  }else{
-    document.getElementById("error").innerText="Falscher Code";
-  }
-}
-
-// START
-function start(){
-
-  document.body.innerHTML = `
-  <img src="logo.png" class="logo">
-
-  <h2>📊 Archiv</h2>
-
-  <input id="search" placeholder="Suche..." oninput="render()">
-
-  <br>
-
-  <button class="red" onclick="clearArchive()">Archiv löschen</button>
-  <button onclick="exportExcel()">Export Excel</button>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Typ</th>
-        <th>Nachricht</th>
-        <th>Zeit</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody id="table"></tbody>
-  </table>
-  `;
-
-  loadArchive();
-}
-
-// 🔥 DATEN LADEN
-function loadArchive(){
-
-  db.ref("test/archive").on("child_added", snap=>{
-    const msg={id:snap.key,...snap.val()};
-    all.push(msg);
-    render();
-  });
-
-  db.ref("test/archive").on("child_changed", snap=>{
-    const updated = snap.val();
-    const index = all.findIndex(m=>m.id===snap.key);
-
-    if(index !== -1){
-      all[index] = {id:snap.key,...updated};
-      render();
-    }
-  });
-}
-
-// 🔍 RENDER + SUCHE + SORTIERUNG
+// RENDER
 function render(){
+  const search=document.getElementById("search").value.toLowerCase();
+  const list=document.getElementById("list");
+  list.innerHTML="";
 
-  const table=document.getElementById("table");
-  table.innerHTML="";
+  all.slice().reverse().forEach(m=>{
 
-  const search = document.getElementById("search").value.toLowerCase();
+    if(search && !m.text.toLowerCase().includes(search)) return;
 
-  let list = all.filter(m =>
-    m.text.toLowerCase().includes(search)
-  );
-
-  // 🔥 NEUESTE OBEN
-  list.sort((a,b)=>b.time - a.time);
-
-  list.forEach(m=>{
     const tr=document.createElement("tr");
 
+    let colorClass="";
+    if(m.type==="Kritik") colorClass="kritik";
+    if(m.type==="Lob") colorClass="lob";
+    if(m.type==="Frage") colorClass="frage";
+    if(m.type==="Vorschlag") colorClass="vorschlag";
+
     tr.innerHTML=`
-      <td class="${m.type}">${m.type}</td>
+      <td class="${colorClass}">${m.type}</td>
       <td>${m.text}</td>
-      <td>${new Date(m.time).toLocaleString()}</td>
-      <td style="color:${m.status==="gelöscht"?"red":"#00ff99"}">
-        ${m.status}
-      </td>
+      <td>${formatTime(m.time)}</td>
+      <td>${m.status || "aktiv"}</td>
     `;
 
-    table.appendChild(tr);
+    list.appendChild(tr);
   });
 }
 
-// 🧹 ARCHIV LÖSCHEN (ohne Logout)
+// 🔥 ARCHIV LÖSCHEN
 function clearArchive(){
-
-  const pw = prompt("Passwort zum Löschen:");
-
-  if(pw !== "2"){
-    alert("Falsches Passwort");
-    return;
-  }
+  const pw = prompt("Passwort?");
+  if(pw!=="2") return alert("Falsch!");
 
   db.ref("test/archive").remove();
-
-  all = [];
-  document.getElementById("table").innerHTML = "";
-
-  alert("Archiv gelöscht");
 }
 
-// 🔥 AUTO LOGOUT BEI PASSWORT ÄNDERUNG
-db.ref("test/settings/archiveLogout").on("value", snap=>{
-  const logoutTime = snap.val();
-  const myLoginTime = localStorage.getItem("archiveLoginTime");
-
-  if(logoutTime && myLoginTime && logoutTime > myLoginTime){
-    alert("Archiv Passwort wurde geändert!");
-    localStorage.removeItem("archiveLoginTime");
-    location.reload();
-  }
-});
-  function exportCSV(){
-
-  if(all.length === 0){
-    alert("Keine Daten vorhanden");
-    return;
-  }
-
-  let csv = "Typ;Nachricht;Zeit;Status\n";
+// 🔥 EXPORT CSV
+function exportCSV(){
+  let csv="Typ;Nachricht;Zeit;Status\n";
 
   all.forEach(m=>{
-    const time = new Date(m.time).toLocaleString();
-
-    // Sonderzeichen absichern
-    const text = m.text.replace(/;/g, ",").replace(/\n/g, " ");
-
-    csv += `${m.type};${text};${time};${m.status}\n`;
+    csv+=`${m.type};${m.text};${formatTime(m.time)};${m.status||"aktiv"}\n`;
   });
 
-  // Datei erstellen
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
+  const blob=new Blob([csv],{type:"text/csv"});
+  const url=URL.createObjectURL(blob);
 
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "archiv.csv";
-  link.click();
-}
-
-function exportExcel(){
-
-  if(all.length === 0){
-    alert("Keine Daten vorhanden");
-    return;
-  }
-
-  const data = all.map(m => ({
-    Typ: m.type,
-    Nachricht: m.text,
-    Zeit: new Date(m.time).toLocaleString(),
-    Status: m.status
-  }));
-
-  const worksheet = XLSX.utils.json_to_sheet(data);
-  const workbook = XLSX.utils.book_new();
-
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Archiv");
-
-  XLSX.writeFile(workbook, "archiv.xlsx");
+  const a=document.createElement("a");
+  a.href=url;
+  a.download="archiv.csv";
+  a.click();
 }
 </script>
 
