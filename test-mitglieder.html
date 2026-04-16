@@ -19,13 +19,7 @@ body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
   text-align:left;
   width:95%;
   max-width:900px;
-
   box-shadow:0 4px 15px rgba(0,0,0,0.6);
-  transition:0.2s;
-}
-
-.msg:hover{
-  transform:scale(1.01);
 }
 
 .msg.Kritik{border-left:4px solid #ff4444;color:#ff4444;}
@@ -33,10 +27,7 @@ body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
 .msg.Frage{border-left:4px solid #00bfff;color:#00bfff;}
 .msg.Vorschlag{border-left:4px solid #ffaa00;color:#ffaa00;}
 
-.blink{
-  animation:blink 1.5s ease-in-out infinite;
-}
-
+.blink{animation:blink 1.5s ease-in-out infinite;}
 @keyframes blink{
   0%{box-shadow:0 0 5px currentColor;}
   50%{box-shadow:0 0 15px currentColor;}
@@ -49,29 +40,6 @@ body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
 .frage{color:#00bfff;}
 .vorschlag{color:#ffaa00;}
 
-#typeButtons button{
-  margin:5px;
-  padding:10px 14px;
-  border-radius:10px;
-  border:none;
-  cursor:pointer;
-  font-weight:bold;
-  transition:0.2s;
-  opacity:0.6;
-}
-
-/* HOVER */
-#typeButtons button:hover{
-  transform:scale(1.05);
-  opacity:1;
-}
-
-/* AKTIV */
-#typeButtons button.active{
-  opacity:1;
-  box-shadow:0 0 10px currentColor, 0 0 20px currentColor;
-}
-  
 textarea{
   width:90%;
   padding:12px;
@@ -81,9 +49,23 @@ textarea{
   outline:none;
   background:#111;
   color:white;
-  box-shadow:0 0 10px rgba(0,0,0,0.5);
 }
 
+#typeButtons button{
+  margin:5px;
+  padding:10px 14px;
+  border-radius:10px;
+  border:none;
+  cursor:pointer;
+  font-weight:bold;
+  opacity:0.6;
+  transition:0.2s;
+}
+
+#typeButtons button.active{
+  opacity:1;
+  box-shadow:0 0 10px currentColor,0 0 20px currentColor;
+}
 </style>
 </head>
 
@@ -111,6 +93,14 @@ const db = firebase.database();
 let currentPassword="";
 let all=[];
 let selectedType="Kritik";
+
+// 🔥 ZEIT FORMAT
+function formatTime(timestamp){
+  if(!timestamp) return "";
+  const d = new Date(timestamp);
+  return d.toLocaleDateString("de-DE") + " | " +
+         d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+}
 
 // Passwort laden
 db.ref("test/settings/memberPassword").on("value", snap=>{
@@ -159,13 +149,12 @@ function start(){
 
   <br>
 
-  <textarea id="text" rows="4" placeholder="Nachricht"
-  style="width:90%;padding:10px;border-radius:10px;"></textarea>
+  <textarea id="text" rows="4" placeholder="Nachricht"></textarea>
 
   <br>
 
   <div id="typeButtons">
-    <button onclick="setType('Kritik')" class="kritik">Kritik</button>
+    <button onclick="setType('Kritik')" class="kritik active">Kritik</button>
     <button onclick="setType('Lob')" class="lob">Lob</button>
     <button onclick="setType('Frage')" class="frage">Frage</button>
     <button onclick="setType('Vorschlag')" class="vorschlag">Vorschlag</button>
@@ -179,32 +168,22 @@ function start(){
   `;
 
   loadOnline();
-  function formatTime(timestamp){
-  const d = new Date(timestamp);
-
-  const day = d.toLocaleDateString("de-DE");
-  const time = d.toLocaleTimeString("de-DE", {hour:"2-digit", minute:"2-digit"});
-
-  return day + " | " + time;
-}
   loadMessages();
-  // 🔥 KICK CHECK (MITGLIEDER)
-db.ref("test/settings/forceLogoutMembers").on("value", snap=>{
-  const logoutTime = snap.val();
-  const myTime = localStorage.getItem("memberLoginTime");
 
-  if(logoutTime && myTime && logoutTime > myTime){
-    alert("Du wurdest gekickt!");
-    localStorage.clear();
-    location.reload();
-  }
-});
-  setTimeout(()=>{
-  document.querySelector("#typeButtons button").classList.add("active");
-},100);
+  // 🔥 KICK CHECK
+  db.ref("test/settings/forceLogoutMembers").on("value", snap=>{
+    const logoutTime = snap.val();
+    const myTime = localStorage.getItem("memberLoginTime");
+
+    if(logoutTime && myTime && logoutTime > myTime){
+      alert("Du wurdest gekickt!");
+      localStorage.clear();
+      location.reload();
+    }
+  });
 }
 
-// BUTTON AUSWAHL
+// BUTTON
 function setType(type){
   selectedType = type;
 
@@ -225,7 +204,7 @@ function loadOnline(){
   });
 }
 
-// MESSAGES
+// LOAD MESSAGES
 function loadMessages(){
   db.ref("test/feedback").on("child_added", snap=>{
     const msg={id:snap.key,...snap.val(),isNew:true};
@@ -251,10 +230,11 @@ function render(){
     div.className="msg "+m.type+(m.isNew?" blink":"");
 
     div.innerHTML=`
-  <b>${m.type}</b><br>
-  ${m.text}<br>
-  <small style="opacity:0.6;">${formatTime(m.time)}</small>
-`;
+      <b>${m.type}</b><br>
+      ${m.text}<br>
+      <small style="opacity:0.6;">${formatTime(m.time)}</small>
+    `;
+
     chat.appendChild(div);
   });
 }
@@ -264,7 +244,12 @@ function send(){
   const text=document.getElementById("text").value;
   if(!text) return;
 
-  const newMsg={text, type:selectedType, time:Date.now()};
+  const newMsg={
+    text,
+    type:selectedType,
+    time:Date.now()
+  };
+
   const ref = db.ref("test/feedback").push(newMsg);
 
   db.ref("test/archive/"+ref.key).set({
