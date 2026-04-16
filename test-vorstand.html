@@ -69,7 +69,9 @@ function login(){
   const pw = document.getElementById("pw").value;
 
   if(pw === "1"){
-    localStorage.setItem("adminLoginTime", Date.now());
+    if(!localStorage.getItem("adminLoginTime")){
+  localStorage.setItem("adminLoginTime", Date.now());
+}
     start();
   }else{
     document.getElementById("error").innerText="Falsches Passwort";
@@ -138,7 +140,7 @@ function start(){
 
     if(logoutTime && myTime && logoutTime > myTime){
       alert("Du wurdest gekickt!");
-      localStorage.clear();
+      localStorage.removeItem("adminLoginTime");
       location.reload();
     }
   });
