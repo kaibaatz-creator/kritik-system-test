@@ -179,6 +179,14 @@ function start(){
   `;
 
   loadOnline();
+  function formatTime(timestamp){
+  const d = new Date(timestamp);
+
+  const day = d.toLocaleDateString("de-DE");
+  const time = d.toLocaleTimeString("de-DE", {hour:"2-digit", minute:"2-digit"});
+
+  return day + " | " + time;
+}
   loadMessages();
   // 🔥 KICK CHECK (MITGLIEDER)
 db.ref("test/settings/forceLogoutMembers").on("value", snap=>{
@@ -242,7 +250,11 @@ function render(){
     const div=document.createElement("div");
     div.className="msg "+m.type+(m.isNew?" blink":"");
 
-    div.innerHTML=`<b>${m.type}</b><br>${m.text}`;
+    div.innerHTML=`
+  <b>${m.type}</b><br>
+  ${m.text}<br>
+  <small style="opacity:0.6;">${formatTime(m.time)}</small>
+`;
     chat.appendChild(div);
   });
 }
