@@ -213,6 +213,11 @@ function clearArchive(){
 // 📤 EXPORT
 function exportExcel(){
 
+  // 🔒 Bestätigung einbauen
+  if(!confirm("Willst du das Archiv wirklich exportieren?")){
+    return;
+  }
+
   const data = [];
 
   all.forEach(m=>{
