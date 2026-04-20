@@ -68,16 +68,16 @@ let adminId="";
 function login(){
   const pw = document.getElementById("pw").value;
 
-  if(pw === "1"){
-  if(!localStorage.getItem("adminLoginTime")){
-  const now = Date.now();
-localStorage.setItem("adminLoginTime", now);
+  db.ref("test/settings/adminPassword").once("value", snap=>{
+    const adminPw = snap.val();
 
-}
-    start();
-  }else{
-    document.getElementById("error").innerText="Falsches Passwort";
-  }
+    if(pw === String(adminPw)){
+      localStorage.setItem("adminLogin", "true");
+      start();
+    }else{
+      document.getElementById("error").innerText="Falscher Code";
+    }
+  });
 }
 
 // AUTO LOGIN
@@ -280,8 +280,11 @@ div.innerHTML=`
 
 // 🧹 DELETE
 function deleteMsg(id){
-  const pw = prompt("Passwort zum Löschen:");
-  if(pw !== "2"){alert("Falsches Passwort");return;}
+
+  if(localStorage.getItem("adminLogin") !== "true"){
+    alert("Nur Vorstand darf löschen!");
+    return;
+  }
 
   const msg = all.find(m => m.id === id);
 
