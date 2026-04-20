@@ -206,7 +206,7 @@ function render(){
 // 🧹 ARCHIV LÖSCHEN
 function clearArchive(){
   const pw = prompt("Passwort?");
-  if(pw!=="2") return alert("Falsch!");
+  if(pw!=="Test312") return alert("Falsch!");
   db.ref("test/archive").remove();
 }
 
