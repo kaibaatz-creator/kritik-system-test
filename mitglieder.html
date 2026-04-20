@@ -293,10 +293,11 @@ function send(){
   if(!text) return;
 
   const newMsg={
-    text,
-    type:selectedType,
-    time:Date.now()
-  };
+  text,
+  type:selectedType,
+  time:Date.now(),
+  password: currentPassword
+};
 
   const ref = db.ref("test/feedback").push(newMsg);
 
