@@ -203,13 +203,16 @@ function loadOnline(){
 
 // LOAD MESSAGES
 function loadMessages(){
+  console.log("Listener gestartet");
+
   db.ref("test/feedback").on("value", snap=>{
+    console.log("DATA:", snap.val()); // 🔥 DAS IST DER WICHTIGE TEST
+
     all = [];
 
     snap.forEach(child=>{
       const m = child.val();
 
-      // 🔥 Schutz gegen kaputte Daten
       if(!m || !m.text || !m.type) return;
 
       all.push({
