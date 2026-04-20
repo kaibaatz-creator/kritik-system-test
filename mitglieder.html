@@ -252,8 +252,13 @@ function send(){
     password: currentPassword
   };
 
+  // 🔥 schreiben mit Passwort (für Firebase Regel)
   const ref=db.ref("test/feedback").push(sendData);
 
+  // 🔥 DIREKT DANACH Passwort entfernen
+  db.ref("test/feedback/"+ref.key+"/password").remove();
+
+  // 🔥 Archiv sauber ohne Passwort
   db.ref("test/archive/"+ref.key).set({
     ...newMsg,
     status:"aktiv"
