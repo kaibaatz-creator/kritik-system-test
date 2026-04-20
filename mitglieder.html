@@ -203,15 +203,21 @@ function loadOnline(){
 
 // LOAD MESSAGES
 function loadMessages(){
-  db.ref("test/feedback").on("child_added", snap=>{
-    const msg={id:snap.key,...snap.val(),isNew:true};
-    all.push(msg);
-    setTimeout(()=>{msg.isNew=false;render();},15000);
-    render();
-  });
+  db.ref("test/feedback").on("value", snap=>{
+    all = [];
 
-  db.ref("test/feedback").on("child_removed", snap=>{
-    all = all.filter(m => m.id !== snap.key);
+    snap.forEach(child=>{
+      const m = child.val();
+
+      // 🔥 Schutz gegen kaputte Daten
+      if(!m || !m.text || !m.type) return;
+
+      all.push({
+        id: child.key,
+        ...m
+      });
+    });
+
     render();
   });
 }
