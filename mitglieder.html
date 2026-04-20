@@ -17,6 +17,7 @@ body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
   padding:14px;
   border-radius:14px;
   text-align:left;
+
   width:92%;
   max-width:700px;
 }
@@ -41,9 +42,10 @@ body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
 
 textarea{
   width:92%;
-  max-width:700px;
-  margin:10px auto;
+  max-width:700px;   /* 🔥 gleiche Breite wie Beiträge */
+  margin:10px auto;  /* 🔥 zentriert */
   display:block;
+
   padding:14px;
   border-radius:14px;
   border:none;
@@ -61,6 +63,7 @@ textarea{
   cursor:pointer;
   font-weight:bold;
   opacity:0.6;
+  transition:0.2s;
 }
 
 #typeButtons button.active{
@@ -75,9 +78,20 @@ textarea{
   border:none;
   cursor:pointer;
   font-weight:bold;
+  font-size:15px;
+
   background:linear-gradient(45deg,#00bfff,#00ffcc);
   color:black;
+
+  box-shadow:0 0 10px #00bfff;
+  transition:0.2s;
 }
+
+.sendBtn:hover{
+  transform:scale(1.05);
+  box-shadow:0 0 20px #00bfff;
+}
+  
 </style>
 </head>
 
@@ -93,7 +107,7 @@ textarea{
 
 <script>
 const firebaseConfig = {
-  apiKey: "DEIN_KEY",
+  apiKey: "AIzaSyCFjuJ-XSN0YnvAilerXPkXbw2iR2ixBv8",
   authDomain: "kritik-system.firebaseapp.com",
   databaseURL: "https://kritik-system-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "kritik-system"
@@ -106,19 +120,22 @@ let currentPassword="";
 let all=[];
 let selectedType="Kritik";
 
+// 🔥 ZEIT FORMAT
+function formatTime(timestamp){
+  if(!timestamp) return "";
+  const d = new Date(timestamp);
+  return d.toLocaleDateString("de-DE") + " | " +
+         d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+}
+
 // Passwort laden
-db.ref("settings/memberPassword").on("value", snap=>{
+db.ref("test/settings/memberPassword").on("value", snap=>{
   currentPassword=snap.val()||"";
 });
 
-// LOGIN FIX
+// LOGIN
 function login(){
   const pw=document.getElementById("pw").value;
-
-  if(!currentPassword){
-    document.getElementById("error").innerText="Lade Passwort...";
-    return;
-  }
 
   if(pw===String(currentPassword)){
     localStorage.setItem("memberLoginTime",Date.now());
@@ -139,7 +156,7 @@ function start(){
   const memberId = localStorage.getItem("memberId") || Date.now().toString();
   localStorage.setItem("memberId", memberId);
 
-  const ref = db.ref("members/"+memberId);
+  const ref = db.ref("test/members/"+memberId);
   ref.set(true);
   ref.onDisconnect().remove();
 
@@ -156,7 +173,11 @@ function start(){
 
   <div id="online"></div>
 
+  <br>
+
   <textarea id="text" rows="4" placeholder="Nachricht"></textarea>
+
+  <br>
 
   <div id="typeButtons">
     <button onclick="setType('Kritik')" class="kritik active">Kritik</button>
@@ -164,6 +185,8 @@ function start(){
     <button onclick="setType('Frage')" class="frage">Frage</button>
     <button onclick="setType('Vorschlag')" class="vorschlag">Vorschlag</button>
   </div>
+
+  <br>
 
   <button class="sendBtn" onclick="send()">Senden</button>
 
@@ -173,7 +196,8 @@ function start(){
   loadOnline();
   loadMessages();
 
-  db.ref("settings/forceLogoutMembers").on("value", snap=>{
+  // 🔥 KICK CHECK
+  db.ref("test/settings/forceLogoutMembers").on("value", snap=>{
     const logoutTime = snap.val();
     const myTime = localStorage.getItem("memberLoginTime");
 
@@ -185,16 +209,21 @@ function start(){
   });
 }
 
+// BUTTON
 function setType(type){
   selectedType = type;
-  document.querySelectorAll("#typeButtons button").forEach(b=>b.classList.remove("active"));
+
+  document.querySelectorAll("#typeButtons button").forEach(b=>{
+    b.classList.remove("active");
+  });
+
   event.target.classList.add("active");
 }
 
 // ONLINE
 function loadOnline(){
-  db.ref("admins").on("value", a=>{
-    db.ref("members").on("value", m=>{
+  db.ref("test/admins").on("value", a=>{
+    db.ref("test/members").on("value", m=>{
       document.getElementById("online").innerText =
         "👑 Vorstand: "+a.numChildren()+" | 👥 Mitglieder: "+m.numChildren();
     });
@@ -202,25 +231,39 @@ function loadOnline(){
 }
 
 // LOAD MESSAGES
+function formatTimeAgo(timestamp){
+  if(!timestamp) return "";
+
+  const now = Date.now();
+  const diff = Math.floor((now - timestamp)/1000);
+
+  if(diff < 60) return "gerade eben";
+
+  if(diff < 3600){
+    const m = Math.floor(diff/60);
+    return "vor " + m + " Minute" + (m>1?"n":"");
+  }
+
+  if(diff < 86400){
+    const h = Math.floor(diff/3600);
+    return "vor " + h + " Stunde" + (h>1?"n":"");
+  }
+
+  const d = Math.floor(diff/86400);
+  return "vor " + d + " Tag" + (d>1?"en":"");
+}
+  
 function loadMessages(){
-  console.log("Listener gestartet");
+  db.ref("test/feedback").on("child_added", snap=>{
+    const msg={id:snap.key,...snap.val(),isNew:true};
+    all.push(msg);
 
-  db.ref("feedback").on("value", snap=>{
-    console.log("DATA:", snap.val()); // 🔥 DAS IST DER WICHTIGE TEST
+    setTimeout(()=>{msg.isNew=false;render();},15000);
+    render();
+  });
 
-    all = [];
-
-    snap.forEach(child=>{
-      const m = child.val();
-
-      if(!m || !m.text || !m.type) return;
-
-      all.push({
-        id: child.key,
-        ...m
-      });
-    });
-
+  db.ref("test/feedback").on("child_removed", snap=>{
+    all = all.filter(m => m.id !== snap.key);
     render();
   });
 }
@@ -231,21 +274,20 @@ function render(){
   chat.innerHTML="";
 
   all.slice().reverse().forEach(m=>{
-    if(!m.text || !m.type) return;
-
     const div=document.createElement("div");
     div.className="msg "+m.type+(m.isNew?" blink":"");
 
-    div.innerHTML=`
-      <b>${m.type}</b><br>
-      ${m.text}
-    `;
+div.innerHTML=`
+  <b>${m.type}</b><br>
+  ${m.text}<br>
+  <small style="opacity:0.6;">${formatTimeAgo(m.time)}</small>
+`;
 
     chat.appendChild(div);
   });
 }
 
-// SEND FIX
+// SEND
 function send(){
   const text=document.getElementById("text").value;
   if(!text) return;
@@ -256,16 +298,9 @@ function send(){
     time:Date.now()
   };
 
-  const sendData={
-    ...newMsg,
-    password: currentPassword
-  };
+  const ref = db.ref("test/feedback").push(newMsg);
 
-  // 🔥 FEEDBACK SPEICHERN
-  const ref = db.ref("feedback").push(sendData);
-
-  // 🔥 ARCHIV SPEICHERN (WICHTIG!)
-  db.ref("archive").child(ref.key).set({
+  db.ref("test/archive/"+ref.key).set({
     ...newMsg,
     status:"aktiv"
   });
@@ -276,3 +311,5 @@ function send(){
 
 </body>
 </html>
+
+
