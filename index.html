@@ -34,7 +34,6 @@ h2{
   opacity:0.9;
 }
 
-/* GRID */
 .grid{
   display:flex;
   flex-direction:column;
@@ -44,7 +43,6 @@ h2{
   margin:auto;
 }
 
-/* CARD */
 .card{
   display:flex;
   align-items:center;
@@ -61,34 +59,28 @@ h2{
 
   box-shadow:0 0 10px rgba(0,0,0,0.6);
   transition:0.2s;
-  position:relative;
 }
 
-/* Hover Effekt */
 .card:hover{
   transform:scale(1.03);
   box-shadow:0 0 20px rgba(255,255,255,0.1);
 }
 
-/* Klick Effekt */
 .card:active{
-  transform:scale(0.98);
+  transform:scale(0.96);
 }
 
-/* LINKER TEIL */
 .left{
   display:flex;
   align-items:center;
   gap:15px;
 }
 
-/* ICON */
 .card svg{
   width:30px;
   height:30px;
 }
 
-/* COLORS */
 .members{border-left:5px solid #00ff99;}
 .admin{border-left:5px solid #ffaa00;}
 .archive{border-left:5px solid #00bfff;}
@@ -97,7 +89,6 @@ h2{
 .admin svg{color:#ffaa00;}
 .archive svg{color:#00bfff;}
 
-/* BADGE */
 .badge{
   background:#00ff99;
   color:black;
@@ -106,9 +97,15 @@ h2{
   border-radius:10px;
   font-weight:bold;
   box-shadow:0 0 10px #00ff99;
+  animation:pulse 1.5s infinite;
 }
 
-/* kleiner Pfeil */
+@keyframes pulse{
+  0%{box-shadow:0 0 5px #00ff99;}
+  50%{box-shadow:0 0 15px #00ff99;}
+  100%{box-shadow:0 0 5px #00ff99;}
+}
+
 .arrow{
   opacity:0.5;
   font-size:18px;
@@ -127,7 +124,7 @@ h2{
   <a href="mitglieder.html" class="card members">
     <div class="left">
       <i data-lucide="users"></i>
-<span id="membersCount">Mitglieder</span>
+      <span id="membersCount">Mitglieder</span>
     </div>
     <div>
       <span class="badge">LIVE</span>
@@ -138,7 +135,7 @@ h2{
   <a href="vorstand.html" class="card admin">
     <div class="left">
       <i data-lucide="crown"></i>
-<span id="adminsCount">Vorstand</span>
+      <span id="adminsCount">Vorstand</span>
     </div>
     <span class="arrow">→</span>
   </a>
@@ -153,14 +150,18 @@ h2{
 
 </div>
 
+<!-- Icons aktivieren -->
 <script>
 lucide.createIcons();
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+</script>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <script>
 const firebaseConfig = {
-  apiKey: "DEIN_KEY",
+  apiKey: "AIzaSyCFjuJ-XSN0YnvAilerXPkXbw2iR2ixBv8",
   authDomain: "kritik-system.firebaseapp.com",
   databaseURL: "https://kritik-system-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "kritik-system"
@@ -169,20 +170,17 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// Mitglieder
+// Mitglieder live zählen
 db.ref("test/members").on("value", snap=>{
-  const count = snap.numChildren();
   document.getElementById("membersCount").innerText =
-    "Mitglieder (" + count + " online)";
+    "Mitglieder (" + snap.numChildren() + " online)";
 });
 
-// Vorstand
+// Vorstand live zählen
 db.ref("test/admins").on("value", snap=>{
-  const count = snap.numChildren();
   document.getElementById("adminsCount").innerText =
-    "Vorstand (" + count + " online)";
+    "Vorstand (" + snap.numChildren() + " online)";
 });
-  
 </script>
 
 </body>
