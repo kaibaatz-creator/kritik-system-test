@@ -72,7 +72,7 @@ function login(){
     const adminPw = snap.val();
 
     if(pw === String(adminPw)){
-      localStorage.setItem("adminLogin", "true");
+      localStorage.setItem("adminLogin","true");
       start();
     }else{
       document.getElementById("error").innerText="Falscher Code";
