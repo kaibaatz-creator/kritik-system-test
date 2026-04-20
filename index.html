@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Start</title>
 
+<script src="https://unpkg.com/lucide@latest"></script>
+
 <style>
 body{
   background:#000;
@@ -16,28 +18,38 @@ body{
 
 .logo{
   height:120px;
-  margin:20px auto;
+  margin:30px auto 10px;
   display:block;
+}
+
+h2{
+  margin-bottom:20px;
+  font-weight:500;
 }
 
 /* GRID */
 .grid{
-  display:grid;
-  grid-template-columns:1fr;   /* 🔥 nur noch 1 Spalte */
+  display:flex;
+  flex-direction:column;
   gap:20px;
   padding:20px;
-  max-width:700px;            /* 🔥 breiter */
+  max-width:600px;
   margin:auto;
 }
 
-/* KACHEL */
+/* CARD */
 .card{
+  display:flex;
+  align-items:center;
+  gap:15px;
+
   background:#1e1e1e;
   border-radius:20px;
-  padding:30px 10px;
+  padding:25px;
+
   text-decoration:none;
   color:white;
-  font-size:18px;
+  font-size:20px;
   font-weight:bold;
 
   box-shadow:0 0 10px rgba(0,0,0,0.6);
@@ -45,13 +57,24 @@ body{
 }
 
 .card:hover{
-  transform:scale(1.05);
+  transform:scale(1.03);
 }
 
-/* FARBEN */
-.members{border:2px solid #00ff99;}
-.admin{border:2px solid #ffaa00;}
-.archive{border:2px solid #00bfff;}
+/* ICON */
+.card svg{
+  width:28px;
+  height:28px;
+}
+
+/* COLORS */
+.members{border-left:5px solid #00ff99;}
+.admin{border-left:5px solid #ffaa00;}
+.archive{border-left:5px solid #00bfff;}
+
+.members svg{color:#00ff99;}
+.admin svg{color:#ffaa00;}
+.archive svg{color:#00bfff;}
+
 </style>
 </head>
 
@@ -64,18 +87,25 @@ body{
 <div class="grid">
 
   <a href="mitglieder.html" class="card members">
-    👥<br>Mitglieder
+    <i data-lucide="users"></i>
+    Mitglieder
   </a>
 
   <a href="vorstand.html" class="card admin">
-    👑<br>Vorstand
+    <i data-lucide="crown"></i>
+    Vorstand
   </a>
 
   <a href="archiv.html" class="card archive">
-    📊<br>Archiv
+    <i data-lucide="archive"></i>
+    Archiv
   </a>
 
 </div>
+
+<script>
+lucide.createIcons();
+</script>
 
 </body>
 </html>
