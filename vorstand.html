@@ -73,6 +73,7 @@ function login(){
 
     if(pw === String(adminPw)){
       localStorage.setItem("adminLogin","true");
+       localStorage.setItem("adminLoginTime", Date.now());
       start();
     }else{
       document.getElementById("error").innerText="Falscher Code";
