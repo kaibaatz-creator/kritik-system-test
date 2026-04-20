@@ -137,16 +137,16 @@ function start(){
   ref.onDisconnect().remove();
 
   // 🔥 KICK CHECK (JETZT FUNKTIONIERT ES)
-  db.ref("test/settings/forceLogoutAdmins").on("value", snap=>{
-    const logoutTime = snap.val();
-    const myTime = Number(localStorage.getItem("adminLoginTime"));
+db.ref("test/settings/forceLogoutAdmins").on("value", snap=>{
+  const logoutTime = snap.val();
+  const myTime = Number(localStorage.getItem("adminLoginTime"));
 
-   if(logoutTime && myTime && Number(logoutTime) > myTime)
-      alert("Du wurdest gekickt!");
-      localStorage.removeItem("adminLoginTime");
-      location.reload();
-    }
-  });
+  if(logoutTime && myTime && Number(logoutTime) > myTime){
+    alert("Du wurdest gekickt!");
+    localStorage.removeItem("adminLoginTime");
+    location.reload();
+  }
+});
 
   loadOnline();
   loadMessages();
