@@ -281,24 +281,38 @@ div.innerHTML=`
 // 🧹 DELETE
 function deleteMsg(id){
 
+  // 🔒 1. Nur Vorstand darf überhaupt versuchen zu löschen
   if(localStorage.getItem("adminLogin") !== "true"){
     alert("Nur Vorstand darf löschen!");
     return;
   }
 
-  const msg = all.find(m => m.id === id);
+  // 🔒 2. Zusätzliche Sicherheits-Abfrage
+  const pw = prompt("Vorstand Passwort bestätigen:");
 
-  if(msg){
-    db.ref("test/archive/"+id).set({
-      text: msg.text,
-      type: msg.type,
-      time: msg.time,
-      status:"gelöscht",
-      deletedAt:Date.now()
-    });
-  }
+  db.ref("test/settings/adminPassword").once("value", snap=>{
+    const adminPw = snap.val();
 
-  db.ref("test/feedback/"+id).remove();
+    if(pw !== String(adminPw)){
+      alert("Falsches Passwort!");
+      return;
+    }
+
+    // 🔥 LÖSCHEN
+    const msg = all.find(m => m.id === id);
+
+    if(msg){
+      db.ref("test/archive/"+id).set({
+        text: msg.text,
+        type: msg.type,
+        time: msg.time,
+        status:"gelöscht",
+        deletedAt:Date.now()
+      });
+    }
+
+    db.ref("test/feedback/"+id).remove();
+  });
 }
 </script>
 
