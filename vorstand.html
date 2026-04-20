@@ -7,7 +7,8 @@
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 <style>
 body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
 .logo{height:150px;margin:20px auto;display:block;}
@@ -316,6 +317,30 @@ function deleteMsg(id){
   });
 }
 </script>
+<script>
+const firebaseConfig = {
+  apiKey: "DEIN_KEY",
+  authDomain: "kritik-system.firebaseapp.com",
+  databaseURL: "https://kritik-system-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "kritik-system"
+};
 
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// Mitglieder zählen
+db.ref("test/members").on("value", snap=>{
+  const count = snap.numChildren();
+  document.getElementById("membersCount").innerText =
+    "Mitglieder (" + count + " online)";
+});
+
+// Vorstand zählen
+db.ref("test/admins").on("value", snap=>{
+  const count = snap.numChildren();
+  document.getElementById("adminsCount").innerText =
+    "Vorstand (" + count + " online)";
+});
+</script>
 </body>
 </html>
