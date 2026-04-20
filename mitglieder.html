@@ -107,7 +107,7 @@ let all=[];
 let selectedType="Kritik";
 
 // Passwort laden
-db.ref("test/settings/memberPassword").on("value", snap=>{
+db.ref("settings/memberPassword").on("value", snap=>{
   currentPassword=snap.val()||"";
 });
 
@@ -139,7 +139,7 @@ function start(){
   const memberId = localStorage.getItem("memberId") || Date.now().toString();
   localStorage.setItem("memberId", memberId);
 
-  const ref = db.ref("test/members/"+memberId);
+  const ref = db.ref("members/"+memberId);
   ref.set(true);
   ref.onDisconnect().remove();
 
@@ -173,7 +173,7 @@ function start(){
   loadOnline();
   loadMessages();
 
-  db.ref("test/settings/forceLogoutMembers").on("value", snap=>{
+  db.ref("settings/forceLogoutMembers").on("value", snap=>{
     const logoutTime = snap.val();
     const myTime = localStorage.getItem("memberLoginTime");
 
@@ -193,8 +193,8 @@ function setType(type){
 
 // ONLINE
 function loadOnline(){
-  db.ref("test/admins").on("value", a=>{
-    db.ref("test/members").on("value", m=>{
+  db.ref("admins").on("value", a=>{
+    db.ref("members").on("value", m=>{
       document.getElementById("online").innerText =
         "👑 Vorstand: "+a.numChildren()+" | 👥 Mitglieder: "+m.numChildren();
     });
@@ -205,7 +205,7 @@ function loadOnline(){
 function loadMessages(){
   console.log("Listener gestartet");
 
-  db.ref("test/feedback").on("value", snap=>{
+  db.ref("feedback").on("value", snap=>{
     console.log("DATA:", snap.val()); // 🔥 DAS IST DER WICHTIGE TEST
 
     all = [];
@@ -262,13 +262,13 @@ function send(){
   };
 
   // 🔥 schreiben mit Passwort (für Firebase Regel)
-  const ref=db.ref("test/feedback").push(sendData);
+  const ref=db.ref("feedback").push(sendData);
 
   // 🔥 DIREKT DANACH Passwort entfernen
-  db.ref("test/feedback/"+ref.key+"/password").remove();
+  db.ref("feedback/"+ref.key+"/password").remove();
 
   // 🔥 Archiv sauber ohne Passwort
-  db.ref("test/archive/"+ref.key).set({
+  db.ref("archive/"+ref.key).set({
     ...newMsg,
     status:"aktiv"
   });
