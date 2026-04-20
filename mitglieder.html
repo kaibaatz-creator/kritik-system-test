@@ -295,9 +295,16 @@ function send(){
   const newMsg={
   text,
   type:selectedType,
-  time:Date.now(),
+  time:Date.now()
+};
+
+const sendData = {
+  ...newMsg,
   password: currentPassword
 };
+
+// in Firebase:
+const ref = db.ref("test/feedback").push(sendData);
 
   const ref = db.ref("test/feedback").push(newMsg);
 
