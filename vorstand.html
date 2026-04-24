@@ -5,19 +5,58 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vorstand</title>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 
 <style>
-body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
-.logo{height:150px;margin:20px auto;display:block;}
-.container{max-width:700px;margin:auto;padding:10px;}
+body{
+  background:#000;
+  color:white;
+  font-family:Arial;
+  text-align:center;
+  margin:0;
+}
 
-button{padding:10px;border:none;border-radius:10px;cursor:pointer;font-weight:bold;margin:5px;}
+.logo{
+  height:150px;
+  margin:20px auto;
+  display:block;
+}
+
+.container{
+  max-width:700px;
+  margin:auto;
+  padding:10px;
+}
+
+input{
+  padding:10px;
+  border-radius:10px;
+  border:none;
+  margin:5px;
+  width:200px;
+}
+
+button{
+  padding:10px 15px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:bold;
+  margin:5px;
+}
+
 .red{background:red;color:white;}
 
-.msg{background:#1e1e1e;margin:10px 0;padding:14px;border-radius:14px;text-align:left;}
+.msg{
+  background:#1e1e1e;
+  margin:10px 0;
+  padding:14px;
+  border-radius:14px;
+  text-align:left;
+}
 </style>
 </head>
 
@@ -28,15 +67,16 @@ button{padding:10px;border:none;border-radius:10px;cursor:pointer;font-weight:bo
   <img src="logo.png" class="logo">
   <h2>👑 Vorstand Login</h2>
 
-  <input id="email" placeholder="Email"><br><br>
-  <input id="password" type="password" placeholder="Passwort"><br><br>
+  <input id="email" placeholder="Email"><br>
+  <input id="password" type="password" placeholder="Passwort"><br>
 
   <button onclick="login()">Login</button>
 </div>
 
 <script>
+// 🔥 DEINE FIREBASE DATEN
 const firebaseConfig = {
-  apiKey: "AIzaSyCFjuJ-XSN0YnvAilerXPkXbw2iR2ixBv8"",
+  apiKey: "AIzaSyCFjuJ-XSN0YnvAilerXPkXbw2iR2ixBv8",
   authDomain: "kritik-system.firebaseapp.com",
   databaseURL: "https://kritik-system-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "kritik-system"
@@ -45,7 +85,9 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// LOGIN
+let all = [];
+
+// 🔐 LOGIN
 function login(){
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
@@ -54,51 +96,49 @@ function login(){
     .then(() => {
       start();
     })
-    .catch(() => {
-      alert("Login falsch");
+    .catch(error => {
+      alert(error.message);
     });
 }
 
-// AUTO LOGIN CHECK
+// 🔁 AUTO LOGIN
 firebase.auth().onAuthStateChanged(user => {
   if(user){
     start();
   }
 });
 
-// START
+// 🚀 START
 function start(){
 
   document.getElementById("login").style.display="none";
 
   document.body.innerHTML = `
-  <img src="logo.png" class="logo">
+    <img src="logo.png" class="logo">
 
-  <div class="container">
-    <h2>👑 Vorstand</h2>
+    <div class="container">
+      <h2>👑 Vorstand</h2>
 
-    <button class="red" onclick="logout()">Logout</button>
+      <button class="red" onclick="logout()">Logout</button>
 
-    <div id="chat"></div>
-  </div>
+      <div id="chat"></div>
+    </div>
   `;
 
   loadMessages();
 }
 
-// LOGOUT
+// 🚪 LOGOUT
 function logout(){
   firebase.auth().signOut().then(()=>{
     location.reload();
   });
 }
 
-// LOAD MESSAGES
-let all=[];
-
+// 📥 MESSAGES LADEN
 function loadMessages(){
   db.ref("test/feedback").on("child_added", snap=>{
-    const msg={id:snap.key,...snap.val()};
+    const msg = {id:snap.key, ...snap.val()};
     all.push(msg);
     render();
   });
@@ -109,18 +149,18 @@ function loadMessages(){
   });
 }
 
-// RENDER
+// 🎨 RENDER
 function render(){
-  const chat=document.getElementById("chat");
-  chat.innerHTML="";
+  const chat = document.getElementById("chat");
+  chat.innerHTML = "";
 
   all.slice().reverse().forEach(m=>{
     if(!m.text) return;
 
-    const div=document.createElement("div");
-    div.className="msg";
+    const div = document.createElement("div");
+    div.className = "msg";
 
-    div.innerHTML=`
+    div.innerHTML = `
       <b>${m.type}</b><br>
       ${m.text}<br><br>
       <button class="red" onclick="deleteMsg('${m.id}')">Löschen</button>
@@ -130,9 +170,9 @@ function render(){
   });
 }
 
-// DELETE
+// 🧹 LÖSCHEN
 function deleteMsg(id){
-  db.ref("test/feedback/"+id).remove();
+  db.ref("test/feedback/" + id).remove();
 }
 </script>
 
