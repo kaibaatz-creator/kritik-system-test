@@ -73,8 +73,10 @@ button{
   <button onclick="login()">Login</button>
 </div>
 
+<div id="app"></div>
+
 <script>
-// 🔥 DEINE FIREBASE DATEN
+// 🔥 FIREBASE CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyCFjuJ-XSN0YnvAilerXPkXbw2iR2ixBv8",
   authDomain: "kritik-system.firebaseapp.com",
@@ -93,9 +95,6 @@ function login(){
   const password = document.getElementById("password").value;
 
   firebase.auth().signInWithEmailAndPassword(email, password)
-    .then(() => {
-      start();
-    })
     .catch(error => {
       alert(error.message);
     });
@@ -111,9 +110,14 @@ firebase.auth().onAuthStateChanged(user => {
 // 🚀 START
 function start(){
 
-  document.getElementById("login").style.display="none";
+  const loginDiv = document.getElementById("login");
+  if(loginDiv){
+    loginDiv.style.display = "none";
+  }
 
-  document.body.innerHTML = `
+  const app = document.getElementById("app");
+
+  app.innerHTML = `
     <img src="logo.png" class="logo">
 
     <div class="container">
@@ -135,7 +139,7 @@ function logout(){
   });
 }
 
-// 📥 MESSAGES LADEN
+// 📥 MESSAGES
 function loadMessages(){
   db.ref("test/feedback").on("child_added", snap=>{
     const msg = {id:snap.key, ...snap.val()};
@@ -152,6 +156,8 @@ function loadMessages(){
 // 🎨 RENDER
 function render(){
   const chat = document.getElementById("chat");
+  if(!chat) return;
+
   chat.innerHTML = "";
 
   all.slice().reverse().forEach(m=>{
@@ -170,7 +176,7 @@ function render(){
   });
 }
 
-// 🧹 LÖSCHEN
+// 🧹 DELETE
 function deleteMsg(id){
   db.ref("test/feedback/" + id).remove();
 }
