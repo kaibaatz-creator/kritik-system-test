@@ -1,191 +1,81 @@
 <!DOCTYPE html>
-<html lang="de">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vorstand</title>
-
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-
-<style>
-body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
-.logo{height:150px;margin:20px auto;display:block;}
-
-button{
-  padding:10px 15px;
-  border:none;
-  border-radius:10px;
-  cursor:pointer;
-  font-weight:bold;
-  margin:5px;
-}
-
-.orange{background:orange;color:black;}
-.red{background:red;color:white;}
-.white{background:#ddd;color:black;}
-
-.legend span{margin:0 8px;font-weight:bold;}
-.kritik{color:#ff4444;}
-.lob{color:#00ff99;}
-.frage{color:#00bfff;}
-.vorschlag{color:#ffaa00;}
-</style>
 </head>
+<body style="background:black; color:white; text-align:center;">
 
-<body>
+<h2>👑 Vorstand</h2>
 
-<!-- LOGIN -->
-<div id="login">
-  <img src="logo.png" class="logo">
-  <h2>👑 Vorstand Login</h2>
+<input id="email" placeholder="Email"><br><br>
+<input id="pass" type="password" placeholder="Passwort"><br><br>
+<button onclick="login()">Login</button>
 
-  <input id="email" placeholder="Email"><br><br>
-  <input id="password" type="password" placeholder="Passwort"><br><br>
+<div id="app" style="display:none;">
+  <button onclick="newMemberPw()">Mitglieder Passwort neu</button>
+  <p id="memberPw"></p>
 
-  <button onclick="login()">Login</button>
+  <button onclick="newArchivePw()">Archiv Passwort neu</button>
+  <p id="archivePw"></p>
+
+  <div id="liste"></div>
 </div>
 
-<div id="app"></div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyCFjuJ-XSN0YnvAilerXPkXbw2iR2ixBv8",
+const app = initializeApp({
+  apiKey: "DEIN_API_KEY",
   authDomain: "kritik-system.firebaseapp.com",
   databaseURL: "https://kritik-system-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "kritik-system"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-
-// LOGIN
-function login(){
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
-
-  firebase.auth().signInWithEmailAndPassword(email, password)
-    .catch(e => alert(e.message));
-}
-
-// AUTO LOGIN
-firebase.auth().onAuthStateChanged(user=>{
-  if(user) start();
 });
 
-// START
-function start(){
+const db = getDatabase(app);
+const auth = getAuth(app);
 
-  document.getElementById("login").style.display="none";
+window.login = function() {
+  const email = document.getElementById("email").value;
+  const pass = document.getElementById("pass").value;
 
-  document.getElementById("app").innerHTML = `
-    <img src="logo.png" class="logo">
-
-    <h2>👑 Vorstand</h2>
-
-<div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
-  
-  <div>
-    <button class="orange" onclick="newMemberPassword()">Mitglieder Passwort</button>
-    <div id="memberPw"></div>
-  </div>
-
-  <div>
-    <button class="orange" onclick="newArchivePassword()">Archiv Passwort</button>
-    <div id="archivePw"></div>
-  </div>
-
-</div>
-
-    <br>
-
-    <button class="red" onclick="kickMembers()">Mitglieder kicken</button>
-    <button class="red" onclick="kickAdmins()">Vorstand kicken</button>
-
-    <br><br>
-
-    <button class="red" onclick="logout()">Logout</button>
-  `;
-
-  loadSettings();
+  signInWithEmailAndPassword(auth, email, pass)
+    .then(() => {
+      document.getElementById("app").style.display = "block";
+      load();
+    })
+    .catch(() => alert("Login falsch"));
 }
 
+function load() {
+  onValue(ref(db, "test/feedback"), (snap) => {
+    const data = snap.val();
+    const liste = document.getElementById("liste");
+    liste.innerHTML = "";
 
-// PASSWÖRTER ANZEIGEN
-function loadSettings(){
-
-  db.ref("test/settings/memberPassword").on("value", snap=>{
-    document.getElementById("memberPw").innerText =
-      "Code: " + (snap.val() || "-");
-  });
-
-  db.ref("test/settings/archivePassword").on("value", snap=>{
-    document.getElementById("archivePw").innerText =
-      "Archiv Code: " + (snap.val() || "-");
+    for (let key in data) {
+      const i = data[key];
+      liste.innerHTML += `<div>${i.type}: ${i.text}</div>`;
+    }
   });
 }
 
+window.newMemberPw = function() {
+  if (!confirm("Neues Passwort?")) return;
 
-// NEUES MITGLIEDER PASSWORT
-function newMemberPassword(){
-
-  if(!confirm("Wirklich neues Mitglieder Passwort erstellen?\nAlle werden rausgeworfen!")){
-    return;
-  }
-
-  const pw = Math.floor(1000 + Math.random()*9000);
-
-  db.ref("test/settings/memberPassword").set(pw);
-
-  db.ref("test/settings/forceLogoutMembers").set(Date.now());
-  db.ref("test/members").remove();
+  const pw = Math.floor(1000 + Math.random() * 9000);
+  set(ref(db, "test/settings/memberPassword"), pw);
+  document.getElementById("memberPw").innerText = "Code: " + pw;
 }
 
+window.newArchivePw = function() {
+  if (!confirm("Neues Archiv Passwort?")) return;
 
-// NEUES ARCHIV PASSWORT
-function newArchivePassword(){
-
-  if(!confirm("Neues Archiv Passwort setzen?\nAlle werden ausgeloggt!")){
-    return;
-  }
-
-  const pw = Math.floor(1000 + Math.random()*9000);
-
-  db.ref("test/settings/archivePassword").set(pw);
-
-  db.ref("test/settings/forceLogoutArchive").set(Date.now());
-}
-
-
-// KICK MEMBERS
-function kickMembers(){
-
-  if(!confirm("Wirklich ALLE Mitglieder kicken?")){
-    return;
-  }
-
-  db.ref("test/settings/forceLogoutMembers").set(Date.now());
-  db.ref("test/members").remove();
-}
-
-
-// KICK ADMINS
-function kickAdmins(){
-
-  if(!confirm("Wirklich den gesamten Vorstand kicken?")){
-    return;
-  }
-
-  db.ref("test/settings/forceLogoutAdmins").set(Date.now());
-  db.ref("test/admins").remove();
-}
-
-
-// LOGOUT
-function logout(){
-  firebase.auth().signOut().then(()=>location.reload());
+  const pw = Math.floor(1000 + Math.random() * 9000);
+  set(ref(db, "test/settings/archivePassword"), pw);
+  document.getElementById("archivePw").innerText = "Archiv Code: " + pw;
 }
 </script>
 
