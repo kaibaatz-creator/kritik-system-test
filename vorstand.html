@@ -26,21 +26,6 @@ button{
 .red{background:red;color:white;}
 .white{background:#ddd;color:black;}
 
-.msg{
-  background:#1e1e1e;
-  margin:10px auto;
-  padding:14px;
-  border-radius:14px;
-  text-align:left;
-  width:92%;
-  max-width:700px;
-}
-
-.msg.Kritik{border-left:4px solid #ff4444;color:#ff4444;}
-.msg.Lob{border-left:4px solid #00ff99;color:#00ff99;}
-.msg.Frage{border-left:4px solid #00bfff;color:#00bfff;}
-.msg.Vorschlag{border-left:4px solid #ffaa00;color:#ffaa00;}
-
 .legend span{margin:0 8px;font-weight:bold;}
 .kritik{color:#ff4444;}
 .lob{color:#00ff99;}
@@ -75,8 +60,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let all = [];
-let filter = "Alle";
 
 // LOGIN
 function login(){
@@ -97,94 +80,48 @@ function start(){
 
   document.getElementById("login").style.display="none";
 
-document.getElementById("app").innerHTML = `
-  <img src="logo.png" class="logo">
+  document.getElementById("app").innerHTML = `
+    <img src="logo.png" class="logo">
 
-  <h2>👑 Vorstand</h2>
+    <h2>👑 Vorstand</h2>
 
-  <button class="orange" onclick="newMemberPassword()">Mitglieder Passwort</button>
-  <div id="memberPw"></div>
+    <button class="orange" onclick="newMemberPassword()">Mitglieder Passwort</button>
+    <div id="memberPw"></div>
 
-  <button class="orange" onclick="newArchivePassword()">Archiv Passwort</button>
-  <div id="archivePw"></div>
-
-  <br>
-
-  <button class="red" onclick="kickMembers()">Mitglieder kicken</button>
-  <button class="red" onclick="kickAdmins()">Vorstand kicken</button>
-
-    <br><br>
-
-    <div class="legend">
-      <span class="kritik">■ Kritik</span>
-      <span class="lob">■ Lob</span>
-      <span class="frage">■ Frage</span>
-      <span class="vorschlag">■ Vorschlag</span>
-    </div>
+    <button class="orange" onclick="newArchivePassword()">Archiv Passwort</button>
+    <div id="archivePw"></div>
 
     <br>
 
-    <button class="white" onclick="setFilter('Alle')">Alle</button>
-    <button class="white" onclick="setFilter('Kritik')">Kritik</button>
-    <button class="white" onclick="setFilter('Lob')">Lob</button>
-    <button class="white" onclick="setFilter('Frage')">Frage</button>
-    <button class="white" onclick="setFilter('Vorschlag')">Vorschlag</button>
+    <button class="red" onclick="kickMembers()">Mitglieder kicken</button>
+    <button class="red" onclick="kickAdmins()">Vorstand kicken</button>
 
     <br><br>
 
     <button class="red" onclick="logout()">Logout</button>
-
-    <div id="chat"></div>
   `;
 
-  loadMessages();
+  loadSettings();
 }
 
-// FILTER
-function setFilter(f){
-  filter = f;
-  render();
-}
 
-// LOAD MESSAGES
-function loadMessages(){
-  db.ref("test/feedback").on("value", snap=>{
-    all = [];
-    snap.forEach(c=>{
-      all.push({id:c.key,...c.val()});
-    });
-    render();
+// PASSWÖRTER ANZEIGEN
+function loadSettings(){
+
+  db.ref("test/settings/memberPassword").on("value", snap=>{
+    document.getElementById("memberPw").innerText =
+      "Code: " + (snap.val() || "-");
+  });
+
+  db.ref("test/settings/archivePassword").on("value", snap=>{
+    document.getElementById("archivePw").innerText =
+      "Archiv Code: " + (snap.val() || "-");
   });
 }
 
-// RENDER
-function render(){
-  const chat = document.getElementById("chat");
-  chat.innerHTML="";
 
-  all.slice().reverse().forEach(m=>{
-    if(filter !== "Alle" && m.type !== filter) return;
-
-    const div=document.createElement("div");
-    div.className="msg "+m.type;
-
-    div.innerHTML=`
-      <b>${m.type}</b><br>
-      ${m.text}<br><br>
-      <button class="red" onclick="deleteMsg('${m.id}')">Löschen</button>
-    `;
-
-    chat.appendChild(div);
-  });
-}
-
-// DELETE
-function deleteMsg(id){
-  db.ref("test/feedback/"+id).remove();
-}
-
-// PASSWÖRTER
-ffunction newMemberPassword(){
+// NEUES MITGLIEDER PASSWORT
+function newMemberPassword(){
 
   if(!confirm("Wirklich neues Mitglieder Passwort erstellen?\nAlle werden rausgeworfen!")){
     return;
@@ -194,12 +131,12 @@ ffunction newMemberPassword(){
 
   db.ref("test/settings/memberPassword").set(pw);
 
-  // 👉 Anzeige im UI
-  document.getElementById("memberPw").innerText = "Code: " + pw;
-
   db.ref("test/settings/forceLogoutMembers").set(Date.now());
   db.ref("test/members").remove();
 }
+
+
+// NEUES ARCHIV PASSWORT
 function newArchivePassword(){
 
   if(!confirm("Neues Archiv Passwort setzen?\nAlle werden ausgeloggt!")){
@@ -210,13 +147,11 @@ function newArchivePassword(){
 
   db.ref("test/settings/archivePassword").set(pw);
 
-  // 👉 Anzeige im UI
-  document.getElementById("archivePw").innerText = "Archiv Code: " + pw;
-
   db.ref("test/settings/forceLogoutArchive").set(Date.now());
 }
 
-// KICK
+
+// KICK MEMBERS
 function kickMembers(){
 
   if(!confirm("Wirklich ALLE Mitglieder kicken?")){
@@ -227,6 +162,8 @@ function kickMembers(){
   db.ref("test/members").remove();
 }
 
+
+// KICK ADMINS
 function kickAdmins(){
 
   if(!confirm("Wirklich den gesamten Vorstand kicken?")){
@@ -236,6 +173,7 @@ function kickAdmins(){
   db.ref("test/settings/forceLogoutAdmins").set(Date.now());
   db.ref("test/admins").remove();
 }
+
 
 // LOGOUT
 function logout(){
