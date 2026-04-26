@@ -110,10 +110,7 @@ firebase.auth().onAuthStateChanged(user => {
 // 🚀 START
 function start(){
 
-  const loginDiv = document.getElementById("login");
-  if(loginDiv){
-    loginDiv.style.display = "none";
-  }
+  document.getElementById("login").style.display = "none";
 
   const app = document.getElementById("app");
 
@@ -121,15 +118,30 @@ function start(){
     <img src="logo.png" class="logo">
 
     <div class="container">
+
       <h2>👑 Vorstand</h2>
 
       <button class="red" onclick="logout()">Logout</button>
 
+      <br><br>
+
+      <button onclick="newMemberPassword()">Mitglieder Passwort ändern</button>
+      <div id="memberPw"></div>
+
+      <button onclick="newArchivePassword()">Archiv Passwort ändern</button>
+      <div id="archivePw"></div>
+
+      <br><br>
+
+      <button onclick="kickMembers()">Mitglieder kicken</button>
+
       <div id="chat"></div>
+
     </div>
   `;
 
   loadMessages();
+  loadSettings();
 }
 
 // 🚪 LOGOUT
@@ -179,6 +191,33 @@ function render(){
 // 🧹 DELETE
 function deleteMsg(id){
   db.ref("test/feedback/" + id).remove();
+}
+
+function loadSettings(){
+
+  db.ref("test/settings/memberPassword").on("value", snap=>{
+    document.getElementById("memberPw").innerText =
+      "Code: " + snap.val();
+  });
+
+  db.ref("test/settings/archivePassword").on("value", snap=>{
+    document.getElementById("archivePw").innerText =
+      "Archiv Code: " + snap.val();
+  });
+}
+
+function newMemberPassword(){
+  const pw = Math.floor(1000 + Math.random()*9000);
+  db.ref("test/settings/memberPassword").set(pw);
+}
+
+function newArchivePassword(){
+  const pw = Math.floor(1000 + Math.random()*9000);
+  db.ref("test/settings/archivePassword").set(pw);
+}
+
+function kickMembers(){
+  db.ref("test/members").remove();
 }
 </script>
 
