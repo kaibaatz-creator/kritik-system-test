@@ -1,242 +1,58 @@
 <!DOCTYPE html>
-<html lang="de">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-
-<style>
-body{
-  background:#000;
-  color:white;
-  font-family:Arial;
-  text-align:center;
-  margin:0;
-}
-
-.logo{
-  height:150px;
-  margin:20px auto;
-  display:block;
-}
-
-input{
-  padding:10px;
-  border-radius:10px;
-  border:none;
-  width:250px;
-}
-
-button{
-  padding:10px 15px;
-  border:none;
-  border-radius:10px;
-  cursor:pointer;
-  font-weight:bold;
-  margin:5px;
-}
-
-.red{background:red;color:white;}
-.white{background:#ddd;color:black;}
-
-table{
-  width:95%;
-  margin:20px auto;
-  border-collapse:collapse;
-}
-
-th,td{
-  border:1px solid #333;
-  padding:10px;
-}
-
-th{background:#111;}
-tr:nth-child(even){background:#111;}
-
-.kritik{color:#ff4444;}
-.lob{color:#00ff99;}
-.frage{color:#00bfff;}
-.vorschlag{color:#ffaa00;}
-</style>
+<title>Archiv</title>
 </head>
+<body style="background:black; color:white; text-align:center;">
 
-<body>
+<h2>📁 Archiv</h2>
 
-<!-- 🔐 LOGIN -->
-<div id="login">
-  <img src="logo.png" class="logo">
-  <h2>📊 Archiv Login</h2>
-  <input id="pw" placeholder="Code">
-  <button onclick="login()">Login</button>
-  <div id="error" style="color:red;"></div>
+<input id="code" placeholder="Archiv Code">
+<button onclick="login()">Login</button>
+
+<div id="app" style="display:none;">
+  <div id="liste"></div>
 </div>
 
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyCFjuJ-XSN0YnvAilerXPkXbw2iR2ixBv8",
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const app = initializeApp({
+  apiKey: "DEIN_API_KEY",
   authDomain: "kritik-system.firebaseapp.com",
   databaseURL: "https://kritik-system-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "kritik-system"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-let archivePassword = "";
-let all = [];
-
-// 🔑 Passwort laden
-db.ref("test/settings/archivePassword").on("value", snap=>{
-  archivePassword = snap.val() || "";
 });
 
-// 🔐 LOGIN
-function login(){
-  const pw = document.getElementById("pw").value;
+const db = getDatabase(app);
 
-  if(pw === String(archivePassword)){
-    localStorage.setItem("archiveLoginTime", Date.now());
-    start();
-  }else{
-    document.getElementById("error").innerText="Falscher Code";
+window.login = async function() {
+  const input = document.getElementById("code").value;
+
+  const snap = await get(ref(db, "test/settings/archivePassword"));
+  const pw = snap.val();
+
+  if (input == pw) {
+    document.getElementById("app").style.display = "block";
+    load();
+  } else {
+    alert("Falscher Code");
   }
 }
 
-// AUTO LOGIN
-if(localStorage.getItem("archiveLoginTime")){
-  start();
-}
+function load() {
+  onValue(ref(db, "test/feedback"), (snap) => {
+    const data = snap.val();
+    const liste = document.getElementById("liste");
+    liste.innerHTML = "";
 
-// 🚀 START
-function start(){
-
-  document.getElementById("login").style.display="none";
-
-  document.body.innerHTML = `
-  <img src="logo.png" class="logo">
-  <h2>📊 Archiv</h2>
-
-  <input id="search" placeholder="Suche..." oninput="render()">
-
-  <br>
-
-  <button class="red" onclick="clearArchive()">Archiv löschen</button>
-  <button class="white" onclick="exportExcel()">Export Excel</button>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Typ</th>
-        <th>Nachricht</th>
-        <th>Zeit</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody id="list"></tbody>
-  </table>
-  `;
-
-  loadData();
-}
-
-// 🔥 KICK CHECK
-db.ref("test/settings/forceLogoutArchive").on("value", snap=>{
-  const logoutTime = snap.val();
-  const myTime = localStorage.getItem("archiveLoginTime");
-
-  if(logoutTime && myTime && logoutTime > myTime){
-    alert("Archiv Zugriff wurde zurückgesetzt!");
-    localStorage.removeItem("archiveLoginTime");
-    location.reload();
-  }
-});
-
-// 📦 DATEN LADEN
-function loadData(){
-  db.ref("test/archive").on("value", snap=>{
-    all = [];
-    snap.forEach(child=>{
-      all.push(child.val());
-    });
-    render();
+    for (let key in data) {
+      const i = data[key];
+      liste.innerHTML += `<div>${i.type}: ${i.text}</div>`;
+    }
   });
-}
-
-// 🕒 ZEIT FORMAT
-function formatTime(timestamp){
-  if(!timestamp) return "";
-  const d = new Date(timestamp);
-  return d.toLocaleDateString("de-DE") + " " +
-         d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
-}
-
-// 🎨 RENDER
-function render(){
-  const search=document.getElementById("search").value.toLowerCase();
-  const list=document.getElementById("list");
-  list.innerHTML="";
-
-  all.slice().reverse().forEach(m=>{
-    if(!m.text || !m.type) return;
-
-    if(search && !m.text.toLowerCase().includes(search)) return;
-
-    const tr=document.createElement("tr");
-
-    let colorClass="";
-    if(m.type==="Kritik") colorClass="kritik";
-    if(m.type==="Lob") colorClass="lob";
-    if(m.type==="Frage") colorClass="frage";
-    if(m.type==="Vorschlag") colorClass="vorschlag";
-
-    tr.innerHTML=`
-      <td class="${colorClass}">${m.type}</td>
-      <td>${m.text}</td>
-      <td>${formatTime(m.time)}</td>
-      <td>${m.status || "aktiv"}</td>
-    `;
-
-    list.appendChild(tr);
-  });
-}
-
-// 🧹 ARCHIV LÖSCHEN
-function clearArchive(){
-  const pw = prompt("Passwort?");
-  if(pw!=="Test312") return alert("Falsch!");
-  db.ref("test/archive").remove();
-}
-
-// 📤 EXPORT
-function exportExcel(){
-
-  // 🔒 Bestätigung einbauen
-  if(!confirm("Archiv wirklich als Excel exportieren?")){
-    return;
-  }
-
-  const data = [];
-
-  all.forEach(m=>{
-    if(!m.text || !m.type) return;
-
-    data.push({
-      Typ: m.type,
-      Nachricht: m.text,
-      Zeit: formatTime(m.time),
-      Status: m.status || "aktiv"
-    });
-  });
-
-  const worksheet = XLSX.utils.json_to_sheet(data);
-  const workbook = XLSX.utils.book_new();
-
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Archiv");
-
-  XLSX.writeFile(workbook, "archiv.xlsx");
 }
 </script>
 
