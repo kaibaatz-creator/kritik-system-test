@@ -97,18 +97,21 @@ function start(){
 
   document.getElementById("login").style.display="none";
 
-  document.getElementById("app").innerHTML = `
-    <img src="logo.png" class="logo">
+document.getElementById("app").innerHTML = `
+  <img src="logo.png" class="logo">
 
-    <h2>👑 Vorstand</h2>
+  <h2>👑 Vorstand</h2>
 
-    <button class="orange" onclick="newMemberPassword()">Mitglieder Passwort</button>
-    <button class="orange" onclick="newArchivePassword()">Archiv Passwort</button>
+  <button class="orange" onclick="newMemberPassword()">Mitglieder Passwort</button>
+  <div id="memberPw"></div>
 
-    <br>
+  <button class="orange" onclick="newArchivePassword()">Archiv Passwort</button>
+  <div id="archivePw"></div>
 
-    <button class="red" onclick="kickMembers()">Mitglieder kicken</button>
-    <button class="red" onclick="kickAdmins()">Vorstand kicken</button>
+  <br>
+
+  <button class="red" onclick="kickMembers()">Mitglieder kicken</button>
+  <button class="red" onclick="kickAdmins()">Vorstand kicken</button>
 
     <br><br>
 
@@ -181,7 +184,7 @@ function deleteMsg(id){
 }
 
 // PASSWÖRTER
-function newMemberPassword(){
+ffunction newMemberPassword(){
 
   if(!confirm("Wirklich neues Mitglieder Passwort erstellen?\nAlle werden rausgeworfen!")){
     return;
@@ -191,13 +194,12 @@ function newMemberPassword(){
 
   db.ref("test/settings/memberPassword").set(pw);
 
-  alert("Neues Mitglieder Passwort: " + pw);
+  // 👉 Anzeige im UI
+  document.getElementById("memberPw").innerText = "Code: " + pw;
 
-  // 🔥 Kick
   db.ref("test/settings/forceLogoutMembers").set(Date.now());
   db.ref("test/members").remove();
 }
-
 function newArchivePassword(){
 
   if(!confirm("Neues Archiv Passwort setzen?\nAlle werden ausgeloggt!")){
@@ -208,7 +210,8 @@ function newArchivePassword(){
 
   db.ref("test/settings/archivePassword").set(pw);
 
-  alert("Neues Archiv Passwort: " + pw);
+  // 👉 Anzeige im UI
+  document.getElementById("archivePw").innerText = "Archiv Code: " + pw;
 
   db.ref("test/settings/forceLogoutArchive").set(Date.now());
 }
