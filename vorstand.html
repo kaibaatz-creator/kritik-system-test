@@ -91,12 +91,12 @@ let all = [];
 
 // 🔐 LOGIN
 function login(){
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-
-  firebase.auth().signInWithEmailAndPassword(email, password)
-    .catch(error => {
-      alert(error.message);
+  firebase.auth().signInWithEmailAndPassword("test@test.de", "123456")
+    .then(() => {
+      alert("LOGIN OK");
+    })
+    .catch(e => {
+      alert(e.message);
     });
 }
 
