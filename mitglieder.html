@@ -17,6 +17,7 @@ body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
   padding:14px;
   border-radius:14px;
   text-align:left;
+
   width:92%;
   max-width:700px;
 }
@@ -26,31 +27,71 @@ body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
 .msg.Frage{border-left:4px solid #00bfff;color:#00bfff;}
 .msg.Vorschlag{border-left:4px solid #ffaa00;color:#ffaa00;}
 
+.blink{animation:blink 1.5s ease-in-out infinite;}
+@keyframes blink{
+  0%{box-shadow:0 0 5px currentColor;}
+  50%{box-shadow:0 0 15px currentColor;}
+  100%{box-shadow:0 0 5px currentColor;}
+}
+
+.legend span{margin:0 8px;font-weight:bold;}
+.kritik{color:#ff4444;}
+.lob{color:#00ff99;}
+.frage{color:#00bfff;}
+.vorschlag{color:#ffaa00;}
+
 textarea{
   width:92%;
-  max-width:700px;
-  margin:10px auto;
+  max-width:700px;   /* 🔥 gleiche Breite wie Beiträge */
+  margin:10px auto;  /* 🔥 zentriert */
   display:block;
+
   padding:14px;
   border-radius:14px;
   border:none;
+  font-size:16px;
+  outline:none;
   background:#111;
   color:white;
 }
 
-button{
+#typeButtons button{
   margin:5px;
   padding:10px 14px;
   border-radius:10px;
   border:none;
   cursor:pointer;
   font-weight:bold;
+  opacity:0.6;
+  transition:0.2s;
+}
+
+#typeButtons button.active{
+  opacity:1;
+  box-shadow:0 0 10px currentColor,0 0 20px currentColor;
 }
 
 .sendBtn{
+  margin-top:10px;
+  padding:10px 20px;
+  border-radius:12px;
+  border:none;
+  cursor:pointer;
+  font-weight:bold;
+  font-size:15px;
+
   background:linear-gradient(45deg,#00bfff,#00ffcc);
   color:black;
+
+  box-shadow:0 0 10px #00bfff;
+  transition:0.2s;
 }
+
+.sendBtn:hover{
+  transform:scale(1.05);
+  box-shadow:0 0 20px #00bfff;
+}
+  
 </style>
 </head>
 
@@ -66,7 +107,7 @@ button{
 
 <script>
 const firebaseConfig = {
-  apiKey: "DEIN_KEY",
+  apiKey: "AIzaSyCFjuJ-XSN0YnvAilerXPkXbw2iR2ixBv8",
   authDomain: "kritik-system.firebaseapp.com",
   databaseURL: "https://kritik-system-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "kritik-system"
@@ -79,11 +120,20 @@ let currentPassword="";
 let all=[];
 let selectedType="Kritik";
 
+// 🔥 ZEIT FORMAT
+function formatTime(timestamp){
+  if(!timestamp) return "";
+  const d = new Date(timestamp);
+  return d.toLocaleDateString("de-DE") + " | " +
+         d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+}
+
 // Passwort laden
 db.ref("test/settings/memberPassword").on("value", snap=>{
   currentPassword=snap.val()||"";
 });
 
+// LOGIN
 function login(){
   const pw=document.getElementById("pw").value;
 
@@ -95,8 +145,10 @@ function login(){
   }
 }
 
+// AUTO LOGIN
 if(localStorage.getItem("memberLoginTime")) start();
 
+// START
 function start(){
 
   document.getElementById("login").style.display="none";
@@ -112,16 +164,27 @@ function start(){
   <img src="logo.png" class="logo">
   <h2>👥 Mitglieder Live</h2>
 
+  <div class="legend">
+    <span class="kritik">■ Kritik</span>
+    <span class="lob">■ Lob</span>
+    <span class="frage">■ Frage</span>
+    <span class="vorschlag">■ Vorschlag</span>
+  </div>
+
   <div id="online"></div>
+
+  <br>
 
   <textarea id="text" rows="4" placeholder="Nachricht"></textarea>
 
   <br>
 
-  <button onclick="setType('Kritik')">Kritik</button>
-  <button onclick="setType('Lob')">Lob</button>
-  <button onclick="setType('Frage')">Frage</button>
-  <button onclick="setType('Vorschlag')">Vorschlag</button>
+  <div id="typeButtons">
+    <button onclick="setType('Kritik')" class="kritik active">Kritik</button>
+    <button onclick="setType('Lob')" class="lob">Lob</button>
+    <button onclick="setType('Frage')" class="frage">Frage</button>
+    <button onclick="setType('Vorschlag')" class="vorschlag">Vorschlag</button>
+  </div>
 
   <br>
 
@@ -132,58 +195,115 @@ function start(){
 
   loadOnline();
   loadMessages();
+
+  // 🔥 KICK CHECK
+  db.ref("test/settings/forceLogoutMembers").on("value", snap=>{
+    const logoutTime = snap.val();
+    const myTime = localStorage.getItem("memberLoginTime");
+
+    if(logoutTime && myTime && logoutTime > myTime){
+      alert("Du wurdest gekickt!");
+      localStorage.removeItem("memberLoginTime");
+      location.reload();
+    }
+  });
 }
 
+// BUTTON
+function setType(type){
+  selectedType = type;
+
+  document.querySelectorAll("#typeButtons button").forEach(b=>{
+    b.classList.remove("active");
+  });
+
+  event.target.classList.add("active");
+}
+
+// ONLINE
 function loadOnline(){
   db.ref("test/admins").on("value", a=>{
-    const admins = a.numChildren();
-
     db.ref("test/members").on("value", m=>{
-      const members = m.numChildren();
-
       document.getElementById("online").innerText =
-        "👑 Vorstand: " + admins + " | 👥 Mitglieder: " + members;
+        "👑 Vorstand: "+a.numChildren()+" | 👥 Mitglieder: "+m.numChildren();
     });
   });
 }
 
-function setType(type){
-  selectedType = type;
-}
+// LOAD MESSAGES
+function formatTimeAgo(timestamp){
+  if(!timestamp) return "";
 
+  const now = Date.now();
+  const diff = Math.floor((now - timestamp)/1000);
+
+  if(diff < 60) return "gerade eben";
+
+  if(diff < 3600){
+    const m = Math.floor(diff/60);
+    return "vor " + m + " Minute" + (m>1?"n":"");
+  }
+
+  if(diff < 86400){
+    const h = Math.floor(diff/3600);
+    return "vor " + h + " Stunde" + (h>1?"n":"");
+  }
+
+  const d = Math.floor(diff/86400);
+  return "vor " + d + " Tag" + (d>1?"en":"");
+}
+  
 function loadMessages(){
   db.ref("test/feedback").on("child_added", snap=>{
-    const msg={id:snap.key,...snap.val()};
+    const msg={id:snap.key,...snap.val(),isNew:true};
     all.push(msg);
+
+    setTimeout(()=>{msg.isNew=false;render();},15000);
+    render();
+  });
+
+  db.ref("test/feedback").on("child_removed", snap=>{
+    all = all.filter(m => m.id !== snap.key);
     render();
   });
 }
 
+// RENDER
 function render(){
   const chat=document.getElementById("chat");
   chat.innerHTML="";
 
   all.slice().reverse().forEach(m=>{
     const div=document.createElement("div");
-    div.className="msg "+m.type;
+    div.className="msg "+m.type+(m.isNew?" blink":"");
 
-    div.innerHTML=`
-      <b>${m.type}</b><br>
-      ${m.text}
-    `;
+div.innerHTML=`
+  <b>${m.type}</b><br>
+  ${m.text}<br>
+  <small style="opacity:0.6;">${formatTimeAgo(m.time)}</small>
+`;
 
     chat.appendChild(div);
   });
 }
 
+// SEND
 function send(){
   const text=document.getElementById("text").value;
   if(!text) return;
 
-  db.ref("test/feedback").push({
-    text,
-    type:selectedType,
-    time:Date.now()
+  const newMsg={
+  text,
+  type:selectedType,
+  time:Date.now(),
+  password: currentPassword
+};
+
+  const ref = db.ref("test/feedback").push(newMsg);
+
+  db.ref("test/archive/"+ref.key).set({
+    ...newMsg,
+    status:"aktiv"
   });
 
   document.getElementById("text").value="";
@@ -192,3 +312,4 @@ function send(){
 
 </body>
 </html>
+
