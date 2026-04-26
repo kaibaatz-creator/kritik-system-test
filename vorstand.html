@@ -1,83 +1,347 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Vorstand</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vorstand (Test)</title>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<style>
+body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
+.logo{height:150px;margin:20px auto;display:block;}
+.container{max-width:700px;margin:auto;padding:10px;}
+
+button{padding:10px;border:none;border-radius:10px;cursor:pointer;font-weight:bold;margin:5px;}
+.orange{background:orange;color:black;}
+.red{background:red;color:white;}
+
+.msg{background:#1e1e1e;margin:10px 0;padding:14px;border-radius:14px;text-align:left;}
+
+.msg.Kritik{border-left:4px solid #ff4444;color:#ff4444;}
+.msg.Lob{border-left:4px solid #00ff99;color:#00ff99;}
+.msg.Frage{border-left:4px solid #00bfff;color:#00bfff;}
+.msg.Vorschlag{border-left:4px solid #ffaa00;color:#ffaa00;}
+
+.blink{animation:blink 1s infinite;}
+@keyframes blink{
+  0%{box-shadow:0 0 5px currentColor;}
+  50%{box-shadow:0 0 20px currentColor;}
+  100%{box-shadow:0 0 5px currentColor;}
+}
+
+.legend span{margin:0 8px;font-weight:bold;}
+.kritik{color:#ff4444;}
+.lob{color:#00ff99;}
+.frage{color:#00bfff;}
+.vorschlag{color:#ffaa00;}
+</style>
 </head>
-<body style="background:black; color:white; text-align:center;">
 
-<h2>👑 Vorstand</h2>
+<body>
 
-<input id="email" placeholder="Email"><br><br>
-<input id="pass" type="password" placeholder="Passwort"><br><br>
-<button onclick="login()">Login</button>
-
-<div id="app" style="display:none;">
-  <button onclick="newMemberPw()">Mitglieder Passwort neu</button>
-  <p id="memberPw"></p>
-
-  <button onclick="newArchivePw()">Archiv Passwort neu</button>
-  <p id="archivePw"></p>
-
-  <div id="liste"></div>
+<!-- 🔐 LOGIN -->
+<div id="login">
+  <img src="logo.png" class="logo">
+  <h2>👑 Vorstand Login</h2>
+  <input id="pw" placeholder="Passwort">
+  <button onclick="login()">Login</button>
+  <div id="error" style="color:red;"></div>
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-const app = initializeApp({
-  apiKey: "DEIN_API_KEY",
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCFjuJ-XSN0YnvAilerXPkXbw2iR2ixBv8",
   authDomain: "kritik-system.firebaseapp.com",
   databaseURL: "https://kritik-system-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "kritik-system"
-});
+};
 
-const db = getDatabase(app);
-const auth = getAuth(app);
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-window.login = function() {
-  const email = document.getElementById("email").value;
-  const pass = document.getElementById("pass").value;
+let all=[];
+let adminId="";
 
-  signInWithEmailAndPassword(auth, email, pass)
-    .then(() => {
-      document.getElementById("app").style.display = "block";
-      load();
-    })
-    .catch(() => alert("Login falsch"));
-}
+// 🔐 LOGIN
+function login(){
+  const pw = document.getElementById("pw").value;
 
-function load() {
-  onValue(ref(db, "test/feedback"), (snap) => {
-    const data = snap.val();
-    const liste = document.getElementById("liste");
-    liste.innerHTML = "";
+  db.ref("test/settings/adminPassword").once("value", snap=>{
+    const adminPw = snap.val();
 
-    for (let key in data) {
-      const i = data[key];
-      liste.innerHTML += `<div>${i.type}: ${i.text}</div>`;
+    if(pw === String(adminPw)){
+      localStorage.setItem("adminLogin","true");
+       localStorage.setItem("adminLoginTime", Date.now());
+      start();
+    }else{
+      document.getElementById("error").innerText="Falscher Code";
     }
   });
 }
 
-window.newMemberPw = function() {
-  if (!confirm("Neues Passwort?")) return;
-
-  const pw = Math.floor(1000 + Math.random() * 9000);
-  set(ref(db, "test/settings/memberPassword"), pw);
-  document.getElementById("memberPw").innerText = "Code: " + pw;
+// AUTO LOGIN
+if(localStorage.getItem("adminLoginTime")){
+  start();
 }
 
-window.newArchivePw = function() {
-  if (!confirm("Neues Archiv Passwort?")) return;
+// 🚀 START
+function start(){
 
-  const pw = Math.floor(1000 + Math.random() * 9000);
-  set(ref(db, "test/settings/archivePassword"), pw);
-  document.getElementById("archivePw").innerText = "Archiv Code: " + pw;
+  document.getElementById("login").style.display="none";
+
+  document.body.innerHTML = `
+  <img src="logo.png" class="logo">
+
+  <div class="container">
+
+  <h2>👑 Vorstand Live</h2>
+
+  <div id="online"></div>
+
+  <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
+    <div>
+      <button class="orange" onclick="newPassword()">Mitglieder Passwort</button>
+      <div id="pwBox"></div>
+    </div>
+
+    <div>
+      <button class="orange" onclick="newArchivePassword()">Archiv Passwort</button>
+      <div id="archivePwBox"></div>
+    </div>
+  </div>
+
+  <br>
+
+  <button class="red" onclick="kickMembers()">Mitglieder kicken</button>
+  <button class="red" onclick="kickAdmins()">Vorstand kicken</button>
+
+  <div class="legend">
+    <span class="kritik">■ Kritik</span>
+    <span class="lob">■ Lob</span>
+    <span class="frage">■ Frage</span>
+    <span class="vorschlag">■ Vorschlag</span>
+  </div>
+
+  <div id="chat"></div>
+
+  </div>
+  `;
+
+  adminId = localStorage.getItem("adminId") || Date.now().toString();
+  localStorage.setItem("adminId", adminId);
+
+  const ref = db.ref("test/admins/"+adminId);
+  ref.set(true);
+  ref.onDisconnect().remove();
+
+  // 🔥 KICK CHECK (JETZT FUNKTIONIERT ES)
+db.ref("test/settings/forceLogoutAdmins").on("value", snap=>{
+  const logoutTime = snap.val();
+  const myTime = Number(localStorage.getItem("adminLoginTime"));
+
+  if(logoutTime && myTime && Number(logoutTime) > myTime){
+    alert("Du wurdest gekickt!");
+    localStorage.removeItem("adminLoginTime");
+    location.reload();
+  }
+});
+
+  loadOnline();
+  loadMessages();
+}
+
+  // 🔑 Passwort wieder anzeigen
+db.ref("test/settings/memberPassword").on("value", snap=>{
+  const pw = snap.val();
+  if(pw){
+    document.getElementById("pwBox").innerText="Code: "+pw;
+  }
+});
+
+db.ref("test/settings/archivePassword").on("value", snap=>{
+  const pw = snap.val();
+  if(pw){
+    document.getElementById("archivePwBox").innerText="Archiv Code: "+pw;
+  }
+});
+  
+// 👥 ONLINE
+function loadOnline(){
+  db.ref("test/admins").on("value", a=>{
+    const admins = a.numChildren();
+
+    db.ref("test/members").once("value", m=>{
+      const members = m.numChildren();
+
+      document.getElementById("online").innerText =
+        "👑 Vorstand: "+admins+" | 👥 Mitglieder: "+members;
+    });
+  });
+}
+
+// 🔑 PASSWÖRTER
+function newPassword(){
+  if(!confirm("Neues Mitglieder-Passwort erstellen und alle rauswerfen?")) return;
+
+  const pw = Math.floor(1000 + Math.random()*9000);
+
+  db.ref("test/settings/memberPassword").set(pw);
+
+  db.ref("test/settings/forceLogoutMembers").set(Date.now());
+  db.ref("test/members").remove();
+
+  document.getElementById("pwBox").innerText="Code: "+pw;
+}
+
+function newArchivePassword(){
+  if(!confirm("Neues Archiv-Passwort setzen? Alle werden ausgeloggt!")) return;
+
+  const pw = Math.floor(1000 + Math.random()*9000);
+
+  db.ref("test/settings/archivePassword").set(pw);
+  db.ref("test/settings/forceLogoutArchive").set(Date.now());
+
+  document.getElementById("archivePwBox").innerText="Archiv Code: "+pw;
+}
+
+// 🚫 KICK
+function kickMembers(){
+  if(!confirm("Wirklich ALLE Mitglieder kicken?")) return;
+
+  db.ref("test/settings/forceLogoutMembers").set(Date.now());
+  db.ref("test/members").remove();
+}
+
+function kickAdmins(){
+  if(!confirm("Wirklich den gesamten Vorstand kicken?")) return;
+
+  db.ref("test/settings/forceLogoutAdmins").set(Date.now());
+  db.ref("test/admins").remove();
+}
+
+// 🔥 MESSAGES
+function formatTimeAgo(timestamp){
+  if(!timestamp) return "";
+
+  const now = Date.now();
+  const diff = Math.floor((now - timestamp)/1000);
+
+  if(diff < 60) return "gerade eben";
+
+  if(diff < 3600){
+    const m = Math.floor(diff/60);
+    return "vor " + m + " Minute" + (m>1?"n":"");
+  }
+
+  if(diff < 86400){
+    const h = Math.floor(diff/3600);
+    return "vor " + h + " Stunde" + (h>1?"n":"");
+  }
+
+  const d = Math.floor(diff/86400);
+  return "vor " + d + " Tag" + (d>1?"en":"");
+}
+function loadMessages(){
+  db.ref("test/feedback").on("child_added", snap=>{
+    const msg={id:snap.key,...snap.val(),isNew:true};
+    all.push(msg);
+
+    setTimeout(()=>{msg.isNew=false;render();},15000);
+    render();
+  });
+
+  db.ref("test/feedback").on("child_removed", snap=>{
+    all = all.filter(m => m.id !== snap.key);
+    render();
+  });
+}
+
+// RENDER
+function render(){
+  const chat=document.getElementById("chat");
+  chat.innerHTML="";
+
+  all.slice().reverse().forEach(m=>{
+  if(!m.text || !m.type) return;
+    const div=document.createElement("div");
+    div.className="msg "+m.type+(m.isNew?" blink":"");
+
+div.innerHTML=`
+  <b>${m.type}</b><br>
+  ${m.text}<br>
+  <small style="opacity:0.6;">${formatTimeAgo(m.time)}</small><br><br>
+  <button class="red" onclick="deleteMsg('${m.id}')">Löschen</button>
+`;
+
+    chat.appendChild(div);
+  });
+}
+
+// 🧹 DELETE
+function deleteMsg(id){
+
+  // 🔒 1. Nur Vorstand darf überhaupt versuchen zu löschen
+  if(localStorage.getItem("adminLogin") !== "true"){
+    alert("Nur Vorstand darf löschen!");
+    return;
+  }
+
+  // 🔒 2. Zusätzliche Sicherheits-Abfrage
+  const pw = prompt("Vorstand Passwort bestätigen:");
+
+  db.ref("test/settings/adminPassword").once("value", snap=>{
+    const adminPw = snap.val();
+
+    if(pw !== String(adminPw)){
+      alert("Falsches Passwort!");
+      return;
+    }
+
+    // 🔥 LÖSCHEN
+    const msg = all.find(m => m.id === id);
+
+    if(msg){
+      db.ref("test/archive/"+id).set({
+        text: msg.text,
+        type: msg.type,
+        time: msg.time,
+        status:"gelöscht",
+        deletedAt:Date.now()
+      });
+    }
+
+    db.ref("test/feedback/"+id).remove();
+  });
 }
 </script>
+<script>
+const firebaseConfig = {
+  apiKey: "DEIN_KEY",
+  authDomain: "kritik-system.firebaseapp.com",
+  databaseURL: "https://kritik-system-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "kritik-system"
+};
 
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// Mitglieder zählen
+db.ref("test/members").on("value", snap=>{
+  const count = snap.numChildren();
+  document.getElementById("membersCount").innerText =
+    "Mitglieder (" + count + " online)";
+});
+
+// Vorstand zählen
+db.ref("test/admins").on("value", snap=>{
+  const count = snap.numChildren();
+  document.getElementById("adminsCount").innerText =
+    "Vorstand (" + count + " online)";
+});
+</script>
 </body>
 </html>
+
