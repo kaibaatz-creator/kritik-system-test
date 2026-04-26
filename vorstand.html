@@ -10,70 +10,21 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 
 <style>
-body{
-  background:#000;
-  color:white;
-  font-family:Arial;
-  text-align:center;
-  margin:0;
-}
-
-.logo{
-  height:120px;
-  margin:30px auto 10px;
-  display:block;
-}
-
-h2{
-  margin-bottom:20px;
-  font-weight:500;
-  opacity:0.9;
-}
-
-.grid{
-  display:flex;
-  flex-direction:column;
-  gap:20px;
-  padding:20px;
-  max-width:600px;
-  margin:auto;
-}
-
-.card{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-
-  background:#1e1e1e;
-  border-radius:20px;
-  padding:20px;
-
-  color:white;
-  font-size:18px;
-  font-weight:bold;
-
-  box-shadow:0 0 10px rgba(0,0,0,0.6);
-  transition:0.2s;
-}
-
-.card:hover{
-  transform:scale(1.03);
-  box-shadow:0 0 20px rgba(255,255,255,0.1);
-}
-
-.admin{border-left:5px solid #ffaa00;}
-.archive{border-left:5px solid #00bfff;}
-
-.left{
-  display:flex;
-  align-items:center;
-  gap:15px;
-}
+body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
+.logo{height:150px;margin:20px auto;display:block;}
 
 button{
-  cursor:pointer;
+  padding:10px 15px;
   border:none;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:bold;
+  margin:5px;
 }
+
+.orange{background:orange;color:black;}
+.red{background:red;color:white;}
+.white{background:#ddd;color:black;}
 
 .msg{
   background:#1e1e1e;
@@ -82,8 +33,19 @@ button{
   border-radius:14px;
   text-align:left;
   width:92%;
-  max-width:600px;
+  max-width:700px;
 }
+
+.msg.Kritik{border-left:4px solid #ff4444;color:#ff4444;}
+.msg.Lob{border-left:4px solid #00ff99;color:#00ff99;}
+.msg.Frage{border-left:4px solid #00bfff;color:#00bfff;}
+.msg.Vorschlag{border-left:4px solid #ffaa00;color:#ffaa00;}
+
+.legend span{margin:0 8px;font-weight:bold;}
+.kritik{color:#ff4444;}
+.lob{color:#00ff99;}
+.frage{color:#00bfff;}
+.vorschlag{color:#ffaa00;}
 </style>
 </head>
 
@@ -114,8 +76,9 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let all = [];
+let filter = "Alle";
 
-// 🔐 LOGIN
+// LOGIN
 function login(){
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
@@ -129,93 +92,120 @@ firebase.auth().onAuthStateChanged(user=>{
   if(user) start();
 });
 
-// 🚀 START
+// START
 function start(){
 
   document.getElementById("login").style.display="none";
 
-  const app = document.getElementById("app");
-
-  app.innerHTML = `
+  document.getElementById("app").innerHTML = `
     <img src="logo.png" class="logo">
-    <h2>👑 Vorstand Live</h2>
 
-    <div class="grid">
+    <h2>👑 Vorstand</h2>
 
-      <div class="card admin">
-        <div class="left">Mitglieder Passwort</div>
-        <div id="memberPw"></div>
-      </div>
+    <button class="orange" onclick="newMemberPassword()">Mitglieder Passwort</button>
+    <button class="orange" onclick="newArchivePassword()">Archiv Passwort</button>
 
-      <div class="card archive">
-        <div class="left">Archiv Passwort</div>
-        <div id="archivePw"></div>
-      </div>
+    <br>
 
-      <div class="card admin" onclick="newMemberPassword()">
-        Neues Mitglieder Passwort
-      </div>
+    <button class="red" onclick="kickMembers()">Mitglieder kicken</button>
+    <button class="red" onclick="kickAdmins()">Vorstand kicken</button>
 
-      <div class="card archive" onclick="newArchivePassword()">
-        Neues Archiv Passwort
-      </div>
+    <br><br>
 
-      <div class="card admin" onclick="kickMembers()">
-        Mitglieder kicken
-      </div>
-
-      <div class="card" onclick="logout()">
-        Logout
-      </div>
-
+    <div class="legend">
+      <span class="kritik">■ Kritik</span>
+      <span class="lob">■ Lob</span>
+      <span class="frage">■ Frage</span>
+      <span class="vorschlag">■ Vorschlag</span>
     </div>
+
+    <br>
+
+    <button class="white" onclick="setFilter('Alle')">Alle</button>
+    <button class="white" onclick="setFilter('Kritik')">Kritik</button>
+    <button class="white" onclick="setFilter('Lob')">Lob</button>
+    <button class="white" onclick="setFilter('Frage')">Frage</button>
+    <button class="white" onclick="setFilter('Vorschlag')">Vorschlag</button>
+
+    <br><br>
+
+    <button class="red" onclick="logout()">Logout</button>
 
     <div id="chat"></div>
   `;
 
-  loadSettings();
   loadMessages();
 }
 
-// 🔑 SETTINGS LADEN
-function loadSettings(){
-  db.ref("test/settings/memberPassword").on("value", snap=>{
-    document.getElementById("memberPw").innerText = snap.val();
-  });
+// FILTER
+function setFilter(f){
+  filter = f;
+  render();
+}
 
-  db.ref("test/settings/archivePassword").on("value", snap=>{
-    document.getElementById("archivePw").innerText = snap.val();
+// LOAD MESSAGES
+function loadMessages(){
+  db.ref("test/feedback").on("value", snap=>{
+    all = [];
+    snap.forEach(c=>{
+      all.push({id:c.key,...c.val()});
+    });
+    render();
   });
 }
 
-// 🔄 PASSWORT ÄNDERN
+// RENDER
+function render(){
+  const chat = document.getElementById("chat");
+  chat.innerHTML="";
+
+  all.slice().reverse().forEach(m=>{
+    if(filter !== "Alle" && m.type !== filter) return;
+
+    const div=document.createElement("div");
+    div.className="msg "+m.type;
+
+    div.innerHTML=`
+      <b>${m.type}</b><br>
+      ${m.text}<br><br>
+      <button class="red" onclick="deleteMsg('${m.id}')">Löschen</button>
+    `;
+
+    chat.appendChild(div);
+  });
+}
+
+// DELETE
+function deleteMsg(id){
+  db.ref("test/feedback/"+id).remove();
+}
+
+// PASSWÖRTER
 function newMemberPassword(){
   const pw = Math.floor(1000 + Math.random()*9000);
   db.ref("test/settings/memberPassword").set(pw);
+  db.ref("test/settings/forceLogoutMembers").set(Date.now());
+  db.ref("test/members").remove();
 }
 
 function newArchivePassword(){
   const pw = Math.floor(1000 + Math.random()*9000);
   db.ref("test/settings/archivePassword").set(pw);
+  db.ref("test/settings/forceLogoutArchive").set(Date.now());
 }
 
-// 🚫 KICK
+// KICK
 function kickMembers(){
+  db.ref("test/settings/forceLogoutMembers").set(Date.now());
   db.ref("test/members").remove();
 }
 
-// 📥 MESSAGES
-function loadMessages(){
-  db.ref("test/feedback").on("child_added", snap=>{
-    const msg = snap.val();
-    const div = document.createElement("div");
-    div.className="msg";
-    div.innerHTML = `<b>${msg.type}</b><br>${msg.text}`;
-    document.getElementById("chat").appendChild(div);
-  });
+function kickAdmins(){
+  db.ref("test/settings/forceLogoutAdmins").set(Date.now());
+  db.ref("test/admins").remove();
 }
 
-// 🚪 LOGOUT
+// LOGOUT
 function logout(){
   firebase.auth().signOut().then(()=>location.reload());
 }
