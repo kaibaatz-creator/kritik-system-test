@@ -215,11 +215,21 @@ function newArchivePassword(){
 
 // KICK
 function kickMembers(){
+
+  if(!confirm("Wirklich ALLE Mitglieder kicken?")){
+    return;
+  }
+
   db.ref("test/settings/forceLogoutMembers").set(Date.now());
   db.ref("test/members").remove();
 }
 
 function kickAdmins(){
+
+  if(!confirm("Wirklich den gesamten Vorstand kicken?")){
+    return;
+  }
+
   db.ref("test/settings/forceLogoutAdmins").set(Date.now());
   db.ref("test/admins").remove();
 }
