@@ -1,79 +1,315 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Mitglieder</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<style>
+body{background:#000;color:white;font-family:Arial;text-align:center;margin:0;}
+.logo{height:150px;margin:20px auto;display:block;}
+
+.msg{
+  background:#1e1e1e;
+  margin:12px auto;
+  padding:14px;
+  border-radius:14px;
+  text-align:left;
+
+  width:92%;
+  max-width:700px;
+}
+
+.msg.Kritik{border-left:4px solid #ff4444;color:#ff4444;}
+.msg.Lob{border-left:4px solid #00ff99;color:#00ff99;}
+.msg.Frage{border-left:4px solid #00bfff;color:#00bfff;}
+.msg.Vorschlag{border-left:4px solid #ffaa00;color:#ffaa00;}
+
+.blink{animation:blink 1.5s ease-in-out infinite;}
+@keyframes blink{
+  0%{box-shadow:0 0 5px currentColor;}
+  50%{box-shadow:0 0 15px currentColor;}
+  100%{box-shadow:0 0 5px currentColor;}
+}
+
+.legend span{margin:0 8px;font-weight:bold;}
+.kritik{color:#ff4444;}
+.lob{color:#00ff99;}
+.frage{color:#00bfff;}
+.vorschlag{color:#ffaa00;}
+
+textarea{
+  width:92%;
+  max-width:700px;   /* 🔥 gleiche Breite wie Beiträge */
+  margin:10px auto;  /* 🔥 zentriert */
+  display:block;
+
+  padding:14px;
+  border-radius:14px;
+  border:none;
+  font-size:16px;
+  outline:none;
+  background:#111;
+  color:white;
+}
+
+#typeButtons button{
+  margin:5px;
+  padding:10px 14px;
+  border-radius:10px;
+  border:none;
+  cursor:pointer;
+  font-weight:bold;
+  opacity:0.6;
+  transition:0.2s;
+}
+
+#typeButtons button.active{
+  opacity:1;
+  box-shadow:0 0 10px currentColor,0 0 20px currentColor;
+}
+
+.sendBtn{
+  margin-top:10px;
+  padding:10px 20px;
+  border-radius:12px;
+  border:none;
+  cursor:pointer;
+  font-weight:bold;
+  font-size:15px;
+
+  background:linear-gradient(45deg,#00bfff,#00ffcc);
+  color:black;
+
+  box-shadow:0 0 10px #00bfff;
+  transition:0.2s;
+}
+
+.sendBtn:hover{
+  transform:scale(1.05);
+  box-shadow:0 0 20px #00bfff;
+}
+  
+</style>
 </head>
-<body style="background:black; color:white; text-align:center;">
 
-<h2>👥 Mitglieder</h2>
+<body>
 
-<input id="code" placeholder="Code">
-<button onclick="login()">Login</button>
-
-<div id="app" style="display:none;">
-  <textarea id="text" placeholder="Nachricht"></textarea><br><br>
-
-  <button onclick="send('Kritik')">Kritik</button>
-  <button onclick="send('Lob')">Lob</button>
-  <button onclick="send('Frage')">Frage</button>
-  <button onclick="send('Vorschlag')">Vorschlag</button>
-
-  <div id="liste"></div>
+<div id="login">
+  <img src="logo.png" class="logo">
+  <h2>👥 Mitglieder Login</h2>
+  <input id="pw" placeholder="Code">
+  <button onclick="login()">Login</button>
+  <div id="error" style="color:red;"></div>
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-const app = initializeApp({
-  apiKey: "DEIN_API_KEY",
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCFjuJ-XSN0YnvAilerXPkXbw2iR2ixBv8",
   authDomain: "kritik-system.firebaseapp.com",
   databaseURL: "https://kritik-system-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "kritik-system"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let currentPassword="";
+let all=[];
+let selectedType="Kritik";
+
+// 🔥 ZEIT FORMAT
+function formatTime(timestamp){
+  if(!timestamp) return "";
+  const d = new Date(timestamp);
+  return d.toLocaleDateString("de-DE") + " | " +
+         d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+}
+
+// Passwort laden
+db.ref("test/settings/memberPassword").on("value", snap=>{
+  currentPassword=snap.val()||"";
 });
 
-const db = getDatabase(app);
+// LOGIN
+function login(){
+  const pw=document.getElementById("pw").value;
 
-window.login = async function() {
-  const input = document.getElementById("code").value;
-
-  const snap = await get(ref(db, "test/settings/memberPassword"));
-  const pw = snap.val();
-
-  if (input == pw) {
-    document.getElementById("app").style.display = "block";
-    load();
-  } else {
-    alert("Falscher Code");
+  if(pw===String(currentPassword)){
+    localStorage.setItem("memberLoginTime",Date.now());
+    start();
+  }else{
+    document.getElementById("error").innerText="Falscher Code";
   }
 }
 
-window.send = function(type) {
-  const text = document.getElementById("text").value;
+// AUTO LOGIN
+if(localStorage.getItem("memberLoginTime")) start();
 
-  push(ref(db, "test/feedback"), {
-    text,
-    type,
-    time: Date.now()
-  });
+// START
+function start(){
 
-  document.getElementById("text").value = "";
-}
+  document.getElementById("login").style.display="none";
 
-function load() {
-  onValue(ref(db, "test/feedback"), (snap) => {
-    const data = snap.val();
-    const liste = document.getElementById("liste");
-    liste.innerHTML = "";
+  const memberId = localStorage.getItem("memberId") || Date.now().toString();
+  localStorage.setItem("memberId", memberId);
 
-    for (let key in data) {
-      const i = data[key];
-      liste.innerHTML += `<div>${i.type}: ${i.text}</div>`;
+  const ref = db.ref("test/members/"+memberId);
+  ref.set(true);
+  ref.onDisconnect().remove();
+
+  document.body.innerHTML=`
+  <img src="logo.png" class="logo">
+  <h2>👥 Mitglieder Live</h2>
+
+  <div class="legend">
+    <span class="kritik">■ Kritik</span>
+    <span class="lob">■ Lob</span>
+    <span class="frage">■ Frage</span>
+    <span class="vorschlag">■ Vorschlag</span>
+  </div>
+
+  <div id="online"></div>
+
+  <br>
+
+  <textarea id="text" rows="4" placeholder="Nachricht"></textarea>
+
+  <br>
+
+  <div id="typeButtons">
+    <button onclick="setType('Kritik')" class="kritik active">Kritik</button>
+    <button onclick="setType('Lob')" class="lob">Lob</button>
+    <button onclick="setType('Frage')" class="frage">Frage</button>
+    <button onclick="setType('Vorschlag')" class="vorschlag">Vorschlag</button>
+  </div>
+
+  <br>
+
+  <button class="sendBtn" onclick="send()">Senden</button>
+
+  <div id="chat"></div>
+  `;
+
+  loadOnline();
+  loadMessages();
+
+  // 🔥 KICK CHECK
+  db.ref("test/settings/forceLogoutMembers").on("value", snap=>{
+    const logoutTime = snap.val();
+    const myTime = localStorage.getItem("memberLoginTime");
+
+    if(logoutTime && myTime && logoutTime > myTime){
+      alert("Du wurdest gekickt!");
+      localStorage.removeItem("memberLoginTime");
+      location.reload();
     }
   });
+}
+
+// BUTTON
+function setType(type){
+  selectedType = type;
+
+  document.querySelectorAll("#typeButtons button").forEach(b=>{
+    b.classList.remove("active");
+  });
+
+  event.target.classList.add("active");
+}
+
+// ONLINE
+function loadOnline(){
+  db.ref("test/admins").on("value", a=>{
+    db.ref("test/members").on("value", m=>{
+      document.getElementById("online").innerText =
+        "👑 Vorstand: "+a.numChildren()+" | 👥 Mitglieder: "+m.numChildren();
+    });
+  });
+}
+
+// LOAD MESSAGES
+function formatTimeAgo(timestamp){
+  if(!timestamp) return "";
+
+  const now = Date.now();
+  const diff = Math.floor((now - timestamp)/1000);
+
+  if(diff < 60) return "gerade eben";
+
+  if(diff < 3600){
+    const m = Math.floor(diff/60);
+    return "vor " + m + " Minute" + (m>1?"n":"");
+  }
+
+  if(diff < 86400){
+    const h = Math.floor(diff/3600);
+    return "vor " + h + " Stunde" + (h>1?"n":"");
+  }
+
+  const d = Math.floor(diff/86400);
+  return "vor " + d + " Tag" + (d>1?"en":"");
+}
+  
+function loadMessages(){
+  db.ref("test/feedback").on("child_added", snap=>{
+    const msg={id:snap.key,...snap.val(),isNew:true};
+    all.push(msg);
+
+    setTimeout(()=>{msg.isNew=false;render();},15000);
+    render();
+  });
+
+  db.ref("test/feedback").on("child_removed", snap=>{
+    all = all.filter(m => m.id !== snap.key);
+    render();
+  });
+}
+
+// RENDER
+function render(){
+  const chat=document.getElementById("chat");
+  chat.innerHTML="";
+
+  all.slice().reverse().forEach(m=>{
+    const div=document.createElement("div");
+    div.className="msg "+m.type+(m.isNew?" blink":"");
+
+div.innerHTML=`
+  <b>${m.type}</b><br>
+  ${m.text}<br>
+  <small style="opacity:0.6;">${formatTimeAgo(m.time)}</small>
+`;
+
+    chat.appendChild(div);
+  });
+}
+
+// SEND
+function send(){
+  const text=document.getElementById("text").value;
+  if(!text) return;
+
+  const newMsg={
+  text,
+  type:selectedType,
+  time:Date.now(),
+  password: currentPassword
+};
+
+  const ref = db.ref("test/feedback").push(newMsg);
+
+  db.ref("test/archive/"+ref.key).set({
+    ...newMsg,
+    status:"aktiv"
+  });
+
+  document.getElementById("text").value="";
 }
 </script>
 
 </body>
 </html>
+
