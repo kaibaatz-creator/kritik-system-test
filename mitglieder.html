@@ -117,6 +117,9 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let currentPassword="";
+  db.ref("test/settings/memberPassword").on("value", snap=>{
+  currentPassword = snap.val();
+});
 let all=[];
 let selectedType="Kritik";
 
@@ -135,10 +138,10 @@ db.ref("test/settings/memberPassword").on("value", snap=>{
 
 // LOGIN
 function login(){
-  const pw=document.getElementById("pw").value;
+  const pw = document.getElementById("pw").value;
 
-  if(pw===String(currentPassword)){
-    localStorage.setItem("memberLoginTime",Date.now());
+  if(pw === String(currentPassword)){
+    localStorage.setItem("memberLoginTime", Date.now());
     start();
   }else{
     document.getElementById("error").innerText="Falscher Code";
